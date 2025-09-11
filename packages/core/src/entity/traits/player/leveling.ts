@@ -211,7 +211,7 @@ class PlayerLevelingTrait extends PlayerTrait {
   /**
    * Refreshes the player's attributes based on the current level and experience.
    */
-  private refreshAttributes(): void {
+  public refreshAttributes(): void {
     // Check if the player has a PlayerLevel attribute
     if (this.player.attributes.hasAttribute(AttributeName.PlayerLevel)) {
       // Get the PlayerLevel attribute
