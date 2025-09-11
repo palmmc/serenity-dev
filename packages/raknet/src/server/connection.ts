@@ -93,6 +93,21 @@ class Connection {
   public ackTimeStamp: number = 0;
 
   /**
+   * Latency of the connection in milliseconds
+   */
+  public ping: number = 0;
+
+  /**
+   * The last ACK ID that was sent, used for ping calculation
+   */
+  public lastAckId: number | null = null;
+
+  /**
+   * The timestamp when the last ACK-tracked packet was sent
+   */
+  public ackTimeStamp: number = 0;
+
+  /**
    * Creates a new connection
    * @param server The server instance
    * @param rinfo The remote info
@@ -121,6 +136,7 @@ class Connection {
     // Outputs
     this.outputOrderIndex = Array.from<number>({ length: 32 }).fill(0);
     this.outputSequenceIndex = Array.from<number>({ length: 32 }).fill(0);
+
 
   }
 
@@ -377,7 +393,7 @@ class Connection {
       if (this.lastAckId !== null && sequence === this.lastAckId) {
         const roundTripTime = Date.now() - this.ackTimeStamp;
         this.ping = Math.round(roundTripTime);
-        
+
         // Reset ping tracking
         this.lastAckId = null;
         this.ackTimeStamp = 0;
@@ -408,7 +424,7 @@ class Connection {
       if (this.lastAckId !== null && sequence === this.lastAckId) {
         const roundTripTime = Date.now() - this.ackTimeStamp;
         this.ping = Math.round(roundTripTime);
-        
+
         // Reset ping tracking
         this.lastAckId = null;
         this.ackTimeStamp = 0;
@@ -505,7 +521,7 @@ class Connection {
     if (frame.isSequenced()) {
       if (
         frame.sequenceIndex <
-          (this.inputHighestSequenceIndex[frame.orderChannel] as number) ||
+        (this.inputHighestSequenceIndex[frame.orderChannel] as number) ||
         frame.orderIndex < (this.inputOrderIndex[frame.orderChannel] as number)
       ) {
         // Log a debug message for out of order frames
@@ -724,6 +740,12 @@ class Connection {
 
     // Add the frame set to the backup map
     this.outputBackup.set(frameset.sequence, frameset.frames);
+
+    // Track this sequence for ping calculation if we're not already tracking one
+    if (this.lastAckId === null) {
+      this.lastAckId = frameset.sequence;
+      this.ackTimeStamp = Date.now();
+    }
 
     // Track this sequence for ping calculation if we're not already tracking one
     if (this.lastAckId === null) {
