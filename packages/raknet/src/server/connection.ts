@@ -11,7 +11,7 @@ import {
   Disconnect,
   Frame,
   FrameSet,
-  Nack
+  Nack,
 } from "../proto";
 import { DGRAM_HEADER_SIZE, DGRAM_MTU_OVERHEAD } from "../constants";
 
@@ -75,6 +75,21 @@ class Connection {
   protected outputsplitIndex = 0;
 
   protected outputReliableIndex = 0;
+
+  /**
+   * Latency of the connection in milliseconds
+   */
+  public ping: number = 0;
+
+  /**
+   * The last ACK ID that was sent, used for ping calculation
+   */
+  public lastAckId: number | null = null;
+
+  /**
+   * The timestamp when the last ACK-tracked packet was sent
+   */
+  public ackTimeStamp: number = 0;
 
   /**
    * Latency of the connection in milliseconds
@@ -727,6 +742,12 @@ class Connection {
 
     // Add the frame set to the backup map
     this.outputBackup.set(frameset.sequence, frameset.frames);
+
+    // Track this sequence for ping calculation if we're not already tracking one
+    if (this.lastAckId === null) {
+      this.lastAckId = frameset.sequence;
+      this.ackTimeStamp = Date.now();
+    }
 
     // Track this sequence for ping calculation if we're not already tracking one
     if (this.lastAckId === null) {
