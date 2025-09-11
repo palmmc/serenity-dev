@@ -71,7 +71,7 @@ class PlayerLevelingTrait extends PlayerTrait {
       xpForNextLevel = 2 * currentLevel + 7;
     }
 
-    return Math.floor(progress * xpForNextLevel);
+    return Math.round(progress * xpForNextLevel);
   }
 
   /**
