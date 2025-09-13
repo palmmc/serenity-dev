@@ -92,21 +92,6 @@ class Connection {
   public ackTimeStamp: number = 0;
 
   /**
-   * Latency of the connection in milliseconds
-   */
-  public ping: number = 0;
-
-  /**
-   * The last ACK ID that was sent, used for ping calculation
-   */
-  public lastAckId: number | null = null;
-
-  /**
-   * The timestamp when the last ACK-tracked packet was sent
-   */
-  public ackTimeStamp: number = 0;
-
-  /**
    * Creates a new connection
    * @param server The server instance
    * @param rinfo The remote info
