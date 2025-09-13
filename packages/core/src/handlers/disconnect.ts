@@ -23,20 +23,15 @@ class DisconnectHandler extends NetworkHandler {
     // Despawn the player
     player.despawn({ disconnected: true, hasDied: false });
 
-    // Get the default world from the serenity instance
-    const world = this.serenity.getWorld(); // Default world
+    // Teleport the player to the default dimension, where they will login at.
+    const defaultWorld = this.serenity.getWorld();
 
-    // Iterate through all players in the world and remove the player from their player lists
-    for (const player of world.getPlayers()) {
-      // Fetch the player list trait
-      const trait = player.getTrait(PlayerListTrait);
+    // Set their player position so they spawn at the default world spawn.
+    const storage = player.getStorage();
+    storage.setPosition(defaultWorld.getDimension().spawnPosition);
 
-      // Remove the disconnected player from the player list
-      if (trait) trait.update(player, true);
-    }
-
-    // Write the player's data to the storage
-    world.provider.writePlayer(player.uuid, player.getStorage());
+    // Save the player's data to the default dimension.
+    defaultWorld.provider.writePlayer(player.uuid, storage);
 
     // Nullify the player's permissions
     player.permissions.player = null;
