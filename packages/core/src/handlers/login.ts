@@ -22,6 +22,7 @@ import { NetworkHandler } from "../network";
 import { ClientSystemInfo, Player } from "../entity";
 import { PlayerProperties } from "../types";
 import { PlayerJoinSignal } from "../events";
+import { AuthenticationType } from "@serenityjs/protocol/src/types/authentication-type";
 
 class LoginHandler extends NetworkHandler {
   public static readonly packet = Packet.Login;
@@ -36,13 +37,41 @@ class LoginHandler extends NetworkHandler {
     // Decode the tokens given by the client.
     // This contains the client data, identity data, and public key.
     // Along with the players XUID, display name, and uuid.
+    const { clientData, identityData, authenticationType } = LoginHandler.decode(packet.tokens);
 
-    if (type === AuthenticationType.OfflineSelfSigned && !this.serenity.properties.offlineMode)
-      return void this.network.disconnectConnection(
+    // Check if the authentication type is valid.
+    // The LoginPacket passes one of three authentication types:
+    // 0 - Standard, the player is using their own token to connect.
+    // 1 - The connection is coming from a guest split screen session using the host's token.
+    // 2 - The connection is not authenticated.
+    // By default, we do not want to allow guest or unauthenticated connections to the server.
+
+    if (authenticationType !== AuthenticationType.Full && !this.serenity.properties.allowUnsignedConnections) {
+      // Disconnect the player.
+      return this.network.disconnectConnection(
+        connection,
+        "Failed to authenticate. Make sure you are connected to Xbox Live before joining the server.",
+        DisconnectReason.NotAuthenticated
+      );
+    }
+
+    // Get the clients xuid and username.
+    const xuid = identityData.XUID;
+    const uuid = identityData.identity;
+    const username = identityData.displayName;
+
+    // Check if the xuid is smaller than 16 characters.
+    // If so then the xuid is invalid.
+    // Not sure if this is the best way to check if the xuid is valid, but it works for now.
+    // Possibly add a xuid resolver in the future, but may leave that up to plugins.
+    if (xuid.length < 16) {
+      // Disconnect the player.
+      return this.network.disconnectConnection(
         connection,
         "Offline mode is not supported. Please connect to xbox services",
         DisconnectReason.EmptyAuthFromDiscovery
       );
+    }
 
     // Handle authentication based on mode (online vs offline)
     let cpk: string;
@@ -260,14 +289,48 @@ class LoginHandler extends NetworkHandler {
    * @returns The decoded login token data
    */
   public static decode(tokens: LoginTokens): LoginTokenData {
+    // Contains data about the users client. (Device, game version, etc.)
+    const clientData: ClientData = this.decoder(tokens.client);
+
+    // Parse the identity data from the tokens
+    const identity: { AuthenticationType: number, Certificate: string } = JSON.parse(tokens.identity);
+
+    // Get the identity chain from the identity data
+    const chains: Array<string> = JSON.parse(identity.Certificate).chain;
+
+    // Decode the chains
+    const decodedChains = chains.map((chain) => this.decoder(chain));
+
+    // Contains mainly metadata, but also includes important XBL data (displayName, xuid, identity uuid, etc.)
+    const identityData: IdentityData = decodedChains.find(
+      (chain) => chain.extraData !== undefined
+    )?.extraData;
+
+    // Public key for encryption
+    // TODO: Implement encryption
+    const publicKey = decodedChains.find(
+      (chain) => chain.identityPublicKey !== undefined
+    )?.identityPublicKey;
+
     return {
       clientData: Authentication.partialParse(
         Authentication.split(tokens.client)[1]
       ),
       identityData: null!,
       publicKey: null!
+      clientData,
+      identityData,
+      publicKey,
+      authenticationType: identity.AuthenticationType
     };
   }
+}
+
+function uuidFromBytes(input: Uint8Array): string {
+  const bytes = createHash("md5").update(input).digest();
+  bytes[6] = (bytes[6]! & 0x0f) | 0x30; // version 3
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80; // RFC 4122 variant
+  return `${bytes.subarray(0, 4).toHex()}-${bytes.subarray(4, 6).toHex()}-${bytes.subarray(6, 8).toHex()}-${bytes.subarray(8, 10).toHex()}-${bytes.subarray(10, 16).toHex()}`;
 }
 
 function uuidFromBytes(input: Uint8Array): string {
