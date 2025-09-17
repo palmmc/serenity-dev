@@ -133,20 +133,21 @@ class Container {
    * @returns Whether the item was successfully added into the container.
    */
   public addItem(item: ItemStack): boolean {
-    // If the item isn't stackable, try to place it in the first empty slot.
+    // Non-stackable logic.
     if (!item.isStackable) {
       const emptySlot = this.storage.indexOf(null);
       if (emptySlot > -1) {
         this.setItem(emptySlot, item);
-        item.stackSize = 0; // The item is fully transferred.
+        // Item was fully transferred already.
+        item.stackSize = 0;
         return true;
       }
-      return false; // No empty slot found.
+      // No empty slot was found.
+      return false;
     }
 
     // Loop as long as there are items left in the stack to be added.
     while (item.stackSize > 0) {
-      // 1. Find the first non-full stack of the same item type.
       const existingSlotIndex = this.storage.findIndex(
         (slot) =>
           slot &&
@@ -160,43 +161,38 @@ class Container {
 
         // Calculate how many items we can add to this stack.
         const amountToAdd = Math.min(
-          existingItem.maxStackSize - existingItem.stackSize, // Space available
-          item.stackSize // Items we have
+          existingItem.maxStackSize - existingItem.stackSize,
+          item.stackSize
         );
 
         existingItem.incrementStack(amountToAdd);
         item.decrementStack(amountToAdd);
 
-        // Continue the loop to see if there are more items to place.
         continue;
       }
 
-      // 2. If no stack was found, find the next empty slot.
+      // If no stack was found, find the next empty slot.
       const emptySlotIndex = this.storage.indexOf(null);
 
-      // If there's an empty slot, place the items there.
+      // If there's an empty slot, put items there.
       if (emptySlotIndex > -1) {
         // Determine how many items to put in the new stack.
         const amountToSet = Math.min(item.maxStackSize, item.stackSize);
 
-        // Create a *new* item stack for the empty slot.
-        // Important: Clone the item's properties to avoid reference issues.
+        // Clone new itemstack for empty slot.
         const newItem = new ItemStack(item.type, { ...item, stackSize: amountToSet });
 
         this.setItem(emptySlotIndex, newItem);
         item.decrementStack(amountToSet);
 
-        // Continue the loop in case the original stack was > maxStackSize.
         continue;
       }
 
-      // If we reach here, there are no partial stacks and no empty slots.
-      // The inventory is full. Break the loop.
+      // Inventory is full.
       break;
     }
 
-    // The operation is successful if we managed to add at least some items.
-    // The function returns 'true' if the incoming stack is now empty.
+    // Whether or not all the items were successfully added.
     return item.stackSize === 0;
   }
 
