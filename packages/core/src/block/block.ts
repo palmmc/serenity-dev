@@ -283,7 +283,7 @@ class Block {
       // If the trait does not exist, log an error and skip it.
       if (!traitType) {
         // Log a warning to the console.
-        this.world.logger.warn(
+        this.world.logger.debug(
           `Skipping BlockTrait for block §u${this.identifier}§r @ §7(§u${x}§7, §u${y}§7, §u${z}§7)§r, as the trait §u${identifier}§r does not exist in the block palette.`
         );
 
