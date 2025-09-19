@@ -4,7 +4,7 @@ import {
 } from "@serenityjs/protocol";
 
 import { EntityIdentifier } from "../../../enums";
-import { Command, type CustomEnum, SoftEnum } from "../../../commands";
+import { Command, CommandExecutionState, type CustomEnum, SoftEnum } from "../../../commands";
 
 import { PlayerTrait } from "./trait";
 
@@ -12,6 +12,10 @@ class PlayerCommandExecutorTrait extends PlayerTrait {
   public static readonly identifier = "command-executor";
 
   public static readonly types = [EntityIdentifier.Player];
+
+  private static readonly COMMAND_COOLDOWN = 2500;
+
+  private nextCommand = 0;
 
   /**
    * The available commands that the player can execute.
@@ -153,6 +157,20 @@ class PlayerCommandExecutorTrait extends PlayerTrait {
 
     // Send the packet to the player
     this.player.send(packet);
+  }
+
+  public onCommand(_state: CommandExecutionState): boolean | void {
+    // Implement cooldown.
+    if (this.nextCommand > Date.now()) {
+      this.player.sendMessage(
+        `§cYou are on cooldown. Please wait §4${Math.ceil(
+          (this.nextCommand - Date.now()) / 1000
+        )} §cseconds.`,
+      )
+      return false;
+    }
+    this.nextCommand = Date.now() + PlayerCommandExecutorTrait.COMMAND_COOLDOWN;
+    return true;
   }
 }
 
