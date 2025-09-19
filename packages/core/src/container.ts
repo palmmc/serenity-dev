@@ -138,13 +138,14 @@ class Container {
    * @returns Whether the item was successfully added into the container.
    */
   public addItem(item: ItemStack): boolean {
+    let amount = item.stackSize;
     // Non-stackable logic.
     if (!item.isStackable) {
       const emptySlot = this.storage.indexOf(null);
       if (emptySlot > -1) {
         this.setItem(emptySlot, item);
         // Item was fully transferred already.
-        item.stackSize = 0;
+        amount = 0;
         return true;
       }
       // No empty slot was found.
@@ -152,7 +153,7 @@ class Container {
     }
 
     // Loop as long as there are items left in the stack to be added.
-    while (item.stackSize > 0) {
+    while (amount > 0) {
       const existingSlotIndex = this.storage.findIndex(
         (slot) =>
           slot && slot.stackSize < slot.maxStackSize && item.equals(slot)
@@ -165,11 +166,11 @@ class Container {
         // Calculate how many items we can add to this stack.
         const amountToAdd = Math.min(
           existingItem.maxStackSize - existingItem.stackSize,
-          item.stackSize
+          amount
         );
 
         existingItem.incrementStack(amountToAdd);
-        item.decrementStack(amountToAdd);
+        amount -= amountToAdd;
 
         continue;
       }
@@ -180,16 +181,12 @@ class Container {
       // If there's an empty slot, put items there.
       if (emptySlotIndex > -1) {
         // Determine how many items to put in the new stack.
-        const amountToSet = Math.min(item.maxStackSize, item.stackSize);
+        const amountToSet = Math.min(item.maxStackSize, amount);
 
-        // Clone new itemstack for empty slot.
-        const newItem = new ItemStack(item.type, {
-          ...item,
-          stackSize: amountToSet,
-        });
+        item.stackSize = amountToSet;
 
-        this.setItem(emptySlotIndex, newItem);
-        item.decrementStack(amountToSet);
+        this.setItem(emptySlotIndex, item);
+        amount -= amountToSet;
 
         continue;
       }
@@ -199,7 +196,7 @@ class Container {
     }
 
     // Whether or not all the items were successfully added.
-    return item.stackSize === 0;
+    return amount === 0;
   }
 
   /**
