@@ -52,7 +52,7 @@ class World extends Emitter<WorldEventSignals> {
   /**
    * The identifier of the world.
    */
-  public identifier: string;
+  public readonly identifier: string;
 
   /**
    * The provider of the world.
