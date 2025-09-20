@@ -4,7 +4,7 @@ import {
 } from "@serenityjs/protocol";
 
 import { EntityIdentifier } from "../../../enums";
-import { Command, CommandExecutionState, type CustomEnum, SoftEnum } from "../../../commands";
+import { Command, type CustomEnum, SoftEnum } from "../../../commands";
 
 import { PlayerTrait } from "./trait";
 
@@ -12,10 +12,6 @@ class PlayerCommandExecutorTrait extends PlayerTrait {
   public static readonly identifier = "command-executor";
 
   public static readonly types = [EntityIdentifier.Player];
-
-  private static readonly COMMAND_COOLDOWN = 2500;
-
-  private nextCommand = 0;
 
   /**
    * The available commands that the player can execute.
