@@ -154,10 +154,10 @@ class EntitySharedPropertiesMap extends Map<string, number | boolean | string> {
       // Check if the value is an enum property
       else if (value instanceof EntityEnumProperty) {
         // Get the index of the value in the enum
-        const index = value.getEnum().indexOf(value.currentValue);
+        const enumValue = value.getEnum().indexOf(value.currentValue);
 
         // Push the value to the ints
-        property.ints.push({ index, value: index });
+        property.ints.push({ index, value: enumValue });
       }
     }
 
