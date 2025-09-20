@@ -10,7 +10,7 @@ import { resolve } from "node:path";
 import { BinaryStream, Endianness } from "@serenityjs/binarystream";
 import { Leveldb } from "@serenityjs/leveldb";
 import { DimensionType } from "@serenityjs/protocol";
-import { CompoundTag } from "@serenityjs/nbt";
+import { ByteTag, CompoundTag } from "@serenityjs/nbt";
 
 import { BiomeStorage, Chunk, SubChunk } from "../chunk";
 import { Dimension } from "../dimension";
@@ -168,6 +168,7 @@ class LevelDBProvider extends WorldProvider {
     if (entities.length > 0) {
       // Iterate through the entities and add them to the chunk.
       for (const storage of entities) {
+        if (storage.get<ByteTag>("Persistent")?.valueOf() === 0) continue;
         // Get the entity type from the dimension's entity palette.
         const type = dimension.world.entityPalette.getType(
           storage.getIdentifier()
