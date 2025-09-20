@@ -158,20 +158,6 @@ class PlayerCommandExecutorTrait extends PlayerTrait {
     // Send the packet to the player
     this.player.send(packet);
   }
-
-  public onCommand(_state: CommandExecutionState): boolean | void {
-    // Implement cooldown.
-    if (this.nextCommand > Date.now()) {
-      this.player.sendMessage(
-        `§cYou are on cooldown. Please wait §4${Math.ceil(
-          (this.nextCommand - Date.now()) / 1000
-        )} §cseconds.`,
-      )
-      return false;
-    }
-    this.nextCommand = Date.now() + PlayerCommandExecutorTrait.COMMAND_COOLDOWN;
-    return true;
-  }
 }
 
 export { PlayerCommandExecutorTrait };
