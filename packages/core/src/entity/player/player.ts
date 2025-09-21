@@ -168,6 +168,11 @@ class Player extends Entity {
   public entityTarget: Entity | null = null;
 
   /**
+   * The current additional mining speed multiplier of the player.
+   */
+  public miningSpeed: number = 1;
+
+  /**
    * Whether the player has operator permissions.
    */
   public get isOp(): boolean {
@@ -250,34 +255,6 @@ class Player extends Entity {
 
     // Add the traits of the player type
     for (const [, trait] of this.type.traits) this.addTrait(trait);
-  }
-
-  // --- DEPRECATED - REMOVE IN FUTURE ---
-
-  /**
-   * The current gamemode of the player.
-   * @deprecated Use `getGamemode()` instead.
-   * Will be removed in version 0.8.14.
-   */
-  public get gamemode(): Gamemode {
-    this.world.logger.warn(
-      "The 'Player.gamemode' is deprecated. Please use 'getGamemode()' instead."
-    );
-
-    return this.getGamemode();
-  }
-
-  /**
-   * Set the current gamemode of the player.
-   * @deprecated Use `setGamemode()` instead.
-   * Will be removed in version 0.8.14.
-   */
-  public set gamemode(value: Gamemode) {
-    this.world.logger.warn(
-      "The 'Player.gamemode' is deprecated. Please use 'setGamemode()' instead."
-    );
-
-    this.setGamemode(value);
   }
 
   /**
