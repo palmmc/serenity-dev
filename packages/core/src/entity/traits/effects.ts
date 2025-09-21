@@ -3,7 +3,7 @@ import {
   LevelEvent,
   LevelEventPacket,
   MobEffectEvents,
-  MobEffectPacket
+  MobEffectPacket,
 } from "@serenityjs/protocol";
 import { ListTag, CompoundTag, ByteTag } from "@serenityjs/nbt";
 
@@ -58,7 +58,33 @@ class EntityEffectsTrait extends EntityTrait {
     this.sendPacket({ action: MobEffectEvents.EffectRemove, effectType });
   }
 
-  public addEffect(
+  /**
+   * Checks if the entity has an active effect of the specified type.
+   *
+   * @param effectType - The type of the effect to check.
+   * @returns `true` if the entity has an active effect of the specified type; otherwise, `false`.
+   */
+  public has(effectType: EffectType): boolean {
+    return this.effectMap.has(effectType);
+  }
+
+  /**
+   * Retrieves all active effects on the entity.
+   * @returns An array of active effects.
+   */
+  public getEffects(): EffectType[] {
+    return [...this.effectMap.keys()];
+  }
+
+  /**
+   * Adds a new effect to the entity.
+   *
+   * @param effectType - The type of the effect to add.
+   * @param duration - The duration of the effect in ticks.
+   * @param amplifier - The amplifier of the effect. Optional, defaults to 0.
+   * @param showParticles - Whether the effect should show particles. Optional, defaults to true.
+   */
+  public add(
     effectType: EffectType,
     duration: number,
     options?: EntityEffectOptions
@@ -83,7 +109,7 @@ class EntityEffectsTrait extends EntityTrait {
       return this.sendPacket({
         effectType,
         effect,
-        action: MobEffectEvents.EffectModify
+        action: MobEffectEvents.EffectModify,
       });
     }
     const signal = new EffectAddSignal(this.entity, effect);
@@ -97,7 +123,7 @@ class EntityEffectsTrait extends EntityTrait {
     this.sendPacket({
       action: MobEffectEvents.EffectAdd,
       effectType,
-      effect
+      effect,
     });
   }
 
@@ -113,7 +139,6 @@ class EntityEffectsTrait extends EntityTrait {
     packet.amplifier = effect?.amplifier ?? 0;
     packet.duration = effect?.duration ?? 0;
     packet.inputTick = this.entity.world.currentTick;
-    packet.isAmbient = false; // TODO: investigate ambient effects
 
     this.entity.send(packet);
   }
@@ -140,7 +165,7 @@ class EntityEffectsTrait extends EntityTrait {
       this.sendPacket({
         action: MobEffectEvents.EffectAdd,
         effectType,
-        effect
+        effect,
       });
     }
   }

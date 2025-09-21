@@ -1,4 +1,5 @@
 import Gamemode from "./gamemode";
+import Effect from "./effect";
 import Gamerule from "./gamerule";
 import Ability from "./ability";
 import Clear from "./clear";
@@ -27,6 +28,7 @@ import SETDIMENSIONSPAWN from "./setdimensionspawn";
 // Define all the serenity operator commands
 const OperatorCommands = [
   Gamemode,
+  Effect,
   Gamerule,
   Ability,
   Clear,
