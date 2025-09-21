@@ -162,6 +162,11 @@ class Player extends Entity {
   public entityTarget: Entity | null = null;
 
   /**
+ * The current additional mining speed multiplier of the player.
+ */
+  public miningSpeed: number = 1;
+
+  /**
    * Whether the player has operator permissions.
    */
   public get isOp(): boolean {
