@@ -7,7 +7,7 @@ import {
   LevelEvent,
   LevelEventPacket,
   UpdateBlockLayerType,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 import { BaseTag } from "@serenityjs/nbt";
 
@@ -15,25 +15,25 @@ import { Dimension, World } from "../world";
 import {
   BlockDestroyOptions,
   BlockInteractionOptions,
-  JSONLikeValue
+  JSONLikeValue,
 } from "../types";
 import { Chunk } from "../world/chunk";
 import {
   ItemStackEnchantableTrait,
   ItemStack,
   ItemType,
-  type ItemStackOptions
+  type ItemStackOptions,
 } from "../item";
 import {
   BlockIdentifier,
   BlockToolType,
   CardinalDirection,
-  ItemIdentifier
+  ItemIdentifier,
 } from "../enums";
 import { Serenity } from "../serenity";
 import {
   PlayerBreakBlockSignal,
-  PlayerInteractWithBlockSignal
+  PlayerInteractWithBlockSignal,
 } from "../events";
 
 import { BlockDirectionTrait, BlockTrait } from "./traits";
@@ -42,10 +42,11 @@ import {
   BlockType,
   BlockTypeCollisionBoxComponent,
   BlockTypeGeometryComponent,
-  BlockTypeSelectionBoxComponent
+  BlockTypeSelectionBoxComponent,
 } from "./identity";
 import { BlockLevelStorage } from "./storage";
 import { BlockState } from "./types";
+import { Player } from "../entity";
 
 /**
  * Block is a class the represents an instance of a block in a dimension of a world.
@@ -841,7 +842,7 @@ class Block {
       this.north(),
       this.south(),
       this.east(),
-      this.west()
+      this.west(),
     ];
   }
 
@@ -853,7 +854,7 @@ class Block {
   public above(steps?: number): Block {
     return this.dimension.getBlock({
       ...this.position,
-      y: this.position.y + (steps ?? 1)
+      y: this.position.y + (steps ?? 1),
     });
   }
 
@@ -865,7 +866,7 @@ class Block {
   public below(steps?: number): Block {
     return this.dimension.getBlock({
       ...this.position,
-      y: this.position.y - (steps ?? 1)
+      y: this.position.y - (steps ?? 1),
     });
   }
 
@@ -877,7 +878,7 @@ class Block {
   public north(steps?: number): Block {
     return this.dimension.getBlock({
       ...this.position,
-      z: this.position.z - (steps ?? 1)
+      z: this.position.z - (steps ?? 1),
     });
   }
 
@@ -889,7 +890,7 @@ class Block {
   public south(steps?: number): Block {
     return this.dimension.getBlock({
       ...this.position,
-      z: this.position.z + (steps ?? 1)
+      z: this.position.z + (steps ?? 1),
     });
   }
 
@@ -901,7 +902,7 @@ class Block {
   public east(steps?: number): Block {
     return this.dimension.getBlock({
       ...this.position,
-      x: this.position.x + (steps ?? 1)
+      x: this.position.x + (steps ?? 1),
     });
   }
 
@@ -913,7 +914,7 @@ class Block {
   public west(steps?: number): Block {
     return this.dimension.getBlock({
       ...this.position,
-      x: this.position.x - (steps ?? 1)
+      x: this.position.x - (steps ?? 1),
     });
   }
 
@@ -1080,7 +1081,7 @@ class Block {
       // Create a new ItemStack.
       const itemStack = new ItemStack(drop.type as ItemIdentifier, {
         stackSize,
-        world: this.dimension.world
+        world: this.dimension.world,
       });
 
       // Create a new ItemEntity.
@@ -1106,7 +1107,7 @@ class Block {
    * @param itemStack The item stack used to break the block.
    * @returns The time it takes to break the block.
    */
-  public getBreakTime(itemStack?: ItemStack | null): number {
+  public getBreakTime(itemStack?: ItemStack | null, player?: Player): number {
     // Determine the base hardness & efficiency of the block.
     let hardness = this.getHardness();
     let efficiency = 1;
@@ -1219,6 +1220,9 @@ class Block {
           efficiency *= enchantable.getEnchantment(Enchantment.Efficiency) ?? 1;
         }
       }
+
+      // Apply player mining speed multiplier, used by effects like haste.
+      if (player) efficiency *= player.miningSpeed;
 
       // Check if no efficiency was applied, and if the block has requirements.
       if (efficiency === 1) {
