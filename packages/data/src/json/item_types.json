@@ -84,7 +84,7 @@
     "identifier": "minecraft:field_masoned_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:waxed_cut_copper",
@@ -1613,7 +1613,7 @@
     "identifier": "minecraft:piglin_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:dark_prismarine_slab",
@@ -1989,7 +1989,7 @@
     "identifier": "minecraft:creeper_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:polished_deepslate",
@@ -3656,7 +3656,7 @@
     "identifier": "minecraft:guster_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:brown_carpet",
@@ -5033,7 +5033,7 @@
     "identifier": "minecraft:skull_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:black_concrete_powder",
@@ -10481,25 +10481,25 @@
     "identifier": "minecraft:flower_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:mojang_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:bordure_indented_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:globe_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:wild_armor_trim_smithing_template",
@@ -10513,7 +10513,7 @@
     "identifier": "minecraft:flow_banner_pattern",
     "tags": [],
     "stackable": false,
-    "maxAmount": 1
+    "maxAmount": 64
   },
   {
     "identifier": "minecraft:angler_pottery_sherd",
