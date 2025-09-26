@@ -144,30 +144,8 @@ class EntityEffectsTrait extends EntityTrait {
   }
 
   public onSpawn(): void {
-    const world = this.entity.world;
-    const effectList =
-      this.entity.getStorageEntry<ListTag<CompoundTag>>("entity_effects");
-
-    if (!effectList) return;
-
-    for (const effectTag of effectList) {
-      const effectType = effectTag
-        .get<ByteTag>("effect_type")!
-        .toJSON() as EffectType;
-      const effectBuilder = world.effectPalette.getEffect(effectType);
-
-      if (!effectBuilder) continue;
-      const effect = effectBuilder.deserialize(effectTag);
-
-      this.effectMap.set(effectType, effect);
-      // If the entity is not a player, exit.
-      if (!this.entity.isPlayer()) return;
-      this.sendPacket({
-        action: MobEffectEvents.EffectAdd,
-        effectType,
-        effect,
-      });
-    }
+    // Clear effects.
+    this.entity.dynamicProperties.set("entity_effects", []);
   }
 
   public onDespawn(details: EntityDespawnOptions): void {
