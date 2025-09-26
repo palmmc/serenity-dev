@@ -174,21 +174,8 @@ class EntityEffectsTrait extends EntityTrait {
    * The saved effects are loaded from the "entity_effects" component, which is expected to be an array of objects
    */
   public onSpawn(): void {
-    // Load the effects from the saved data.
-    const entityEffects = (this.entity.dynamicProperties.get(
-      "entity_effects"
-    ) ?? []) as Array<unknown> as Array<savedEffect>;
-
-    for (const effectEntry of entityEffects) {
-      const { effectType, duration, amplifier, showParticles } = effectEntry;
-      const effect = this.entity.world.effectPalette.getEffect(effectType);
-
-      if (!effect) return;
-      this.effects.set(
-        effectType,
-        new effect(duration, amplifier, showParticles)
-      );
-    }
+    // Clear effects.
+    this.entity.dynamicProperties.set("entity_effects", []);
   }
 
   public onDespawn(): void {
