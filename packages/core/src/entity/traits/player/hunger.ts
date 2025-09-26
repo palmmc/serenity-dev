@@ -101,16 +101,6 @@ class PlayerHungerTrait extends EntityAttributeTrait {
     // Check if the player is sprinting
     if (this.player.isSprinting) this.exhaustion += 0.5;
   }
-
-  public onSpawn(details: EntitySpawnOptions): void {
-    // Check if the player is not being spawned for the first time
-    if (details.initialSpawn) return;
-
-    // Reset the current value of the attribute to the default value
-    this.currentValue = this.defaultValue;
-    this.saturation = 10;
-    this.exhaustion = 0;
-  }
 }
 
 export { PlayerHungerTrait };
