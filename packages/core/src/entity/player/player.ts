@@ -768,7 +768,7 @@ class Player extends Entity {
       rendering.send(this.dimension, ...rendering.next());
 
       // Spawn the player in the new dimension
-      return void this.spawn({ changedDimensions: true });
+      return void this.spawn({ changedDimensions: true, initialSpawn: false });
     } else {
       // Change the player's dimension
       this.dimension = dimension;
