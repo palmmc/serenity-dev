@@ -64,7 +64,6 @@ jobs:
   build-binaries:
     name: 🛠️ Build Release Binaries
     needs: version
-    if: needs.version.outputs.created_release_commit == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -107,7 +106,6 @@ jobs:
   release-binaries:
     name: 🧷 Create GitHub Release (attach binaries)
     needs: [version, build-binaries]
-    if: needs.version.outputs.created_release_commit == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Download all artifacts
