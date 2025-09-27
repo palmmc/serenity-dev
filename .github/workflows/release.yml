@@ -95,6 +95,10 @@ jobs:
       - name: 🏗️ Bundle SerenityJS (Beta)
         run: yarn bundle
 
+      - name: 🔧 Make Linux Binary Executable
+        if: runner.os == 'Linux'
+        run: chmod +x dist/*
+
       - name: 📤 Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
