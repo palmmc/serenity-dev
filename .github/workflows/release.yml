@@ -1,4 +1,4 @@
-name: 📦 Build & Release SerenityJS
+name: 📦 Build SerenityJS Custom
 
 on:
   push:
@@ -11,22 +11,17 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write   # needed to create GitHub releases
-  actions: read
+  contents: write
   pull-requests: write
 
-env:
-  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 jobs:
-  release:
+  version:
     name: 🚀 Changeset Release
     runs-on: ubuntu-latest
     outputs:
-      published: ${{ steps.changesets.outputs.published }}
       version: ${{ steps.read_version.outputs.version }}
+      created_release_commit: ${{ steps.changesets.outputs.hasChangesets == 'false' && steps.changesets.outputs.committed == 'true' }}
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -49,35 +44,27 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          createGithubReleases: true
           version: yarn run version
-          publish: yarn run release
           setupGitUser: true
           commit: |
-            Changeset: Increment package & dependency versions.
+            chore(release): version packages
 
             Automated commit from `release` workflow.
           title: "chore(release): release packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Read the repo/root version from package.json after changesets runs.
       - name: 🔖 Read version
+        if: steps.changesets.outputs.hasChangesets == 'false' && steps.changesets.outputs.committed == 'true'
         id: read_version
         run: |
           VERSION=$(node -p "require('./packages/core/package.json').version")
           echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: 🧪 Create Beta Version (if not published)
-        if: steps.changesets.outputs.published != 'true'
-        run: |
-          git checkout main
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-          yarn run version:beta
-          yarn run release:beta
-
   build-binaries:
     name: 🛠️ Build Release Binaries
-    needs: release
-    if: needs.release.outputs.published == 'true'
+    needs: version
+    if: needs.version.outputs.created_release_commit == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -106,7 +93,7 @@ jobs:
       - name: 🔧 Build
         run: yarn build
 
-      - name: 🏗️ Bundle SerenityJS (Latest)
+      - name: 🏗️ Bundle SerenityJS (Beta)
         run: yarn bundle
 
       - name: 📤 Upload Build Artifact
@@ -117,53 +104,10 @@ jobs:
           if-no-files-found: error
           compression-level: 6
 
-  build-binaries-beta:
-    name: 🧪 Build Beta Binaries
-    needs: release
-    if: needs.release.outputs.published != 'true'
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: 🔧 Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-
-      - name: 🔧 Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-
-      - name: 📦 Install Dependencies
-        run: yarn
-
-      - name: 🔧 Build
-        run: yarn build
-
-      - name: 🏗️ Bundle Serenity (Beta)
-        run: yarn bundle:beta
-
-      - name: 📤 Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: serenityjs-beta-${{ matrix.os }}
-          path: dist
-          if-no-files-found: error
-          compression-level: 6
-
   release-binaries:
     name: 🧷 Create GitHub Release (attach binaries)
-    needs: [release, build-binaries]
-    if: needs.release.outputs.published == 'true'
+    needs: [version, build-binaries]
+    if: needs.version.outputs.created_release_commit == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Download all artifacts
@@ -190,7 +134,7 @@ jobs:
         id: notes
         run: |
           echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "Automated binary release for ${GITHUB_REPOSITORY} ${{ needs.release.outputs.version }}." >> $GITHUB_OUTPUT
+          echo "Automated binary release for ${GITHUB_REPOSITORY} ${{ needs.version.outputs.version }}." >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "Includes prebuilt bundles for Linux, macOS, and Windows." >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
@@ -201,8 +145,8 @@ jobs:
       - name: 🚀 Create/Update Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.release.outputs.version }}     # e.g. v1.2.3
-          name: "SerenityJS ${{ needs.release.outputs.version }}"
+          tag_name: ${{ needs.version.outputs.version }}
+          name: "SerenityJS ${{ needs.version.outputs.version }}"
           body: ${{ steps.notes.outputs.body }}
           draft: false
           prerelease: false
