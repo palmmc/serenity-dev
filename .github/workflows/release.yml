@@ -99,11 +99,17 @@ jobs:
         if: runner.os == 'Linux'
         run: chmod +x dist/*
 
+      - name: 📦 Package Linux Build as Tarball
+        if: runner.os == 'Linux'
+        run: tar -czf serenityjs-linux.tar.gz -C dist .
+
       - name: 📤 Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: serenityjs-${{ matrix.os }}
-          path: dist
+          path: |
+            ${{ runner.os == 'Linux' && 'serenityjs-linux.tar.gz' }}
+            ${{ runner.os != 'Linux' && 'dist' }}
           if-no-files-found: error
           compression-level: 6
 
