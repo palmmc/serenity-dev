@@ -130,11 +130,14 @@ jobs:
           set -euxo pipefail
           cd artifacts
           # Each artifact is a folder named like "serenityjs-<os>" containing dist/*
-          for d in serenityjs-*; do
-            [ -d "$d" ] || continue
-            # Prefer zip for cross-platform consumability
-            (cd "$d" && zip -r "../${d}.zip" .)
-            tar -czf "${d}.tar.gz" "$d"
+          for artifact_dir in serenityjs-*; do
+            if [ "$artifact_dir" = "serenityjs-ubuntu-latest" ]; then
+              mv ./"$artifact_dir"/serenityjs-linux.tar.gz ./serenityjs-linux.tar.gz
+            else
+              os_name=$(echo "$artifact_dir" | sed 's/serenityjs-//' | sed 's/-latest//')
+              (cd "$artifact_dir" && zip -r "../serenityjs-${os_name}.zip" .)
+            fi
+            rm -rf "$artifact_dir"
           done
           ls -la
 
