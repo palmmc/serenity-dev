@@ -103,29 +103,12 @@ jobs:
         if: runner.os == 'Linux'
         run: tar -czf serenityjs-linux.tar.gz -C dist .
 
-      - name: 📦 Package Artifact
-        id: package
-        shell: bash
-        run: |
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            FILE_NAME="serenityjs-linux.tar.gz"
-            tar -czf "$FILE_NAME" -C dist .
-          else
-            OS_NAME=""
-            if [[ "${{ runner.os }}" == "macOS" ]]; then
-              OS_NAME="macos"
-            elif [[ "${{ runner.os }}" == "Windows" ]]; then
-              OS_NAME="windows"
-            fi
-            FILE_NAME="serenityjs-${OS_NAME}.zip"
-            (cd dist && zip -r "../$FILE_NAME" .)
-          fi
-          echo "file_name=${FILE_NAME}" >> "$GITHUB_OUTPUT"
-
       - name: 📤 Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-asset-${{ matrix.os }}
-          path: ${{ steps.package.outputs.file_name }}
+          name: serenityjs-${{ matrix.os }}
+          path: |
+            ${{ runner.os == 'Linux' && 'serenityjs-linux.tar.gz' }}
+            ${{ runner.os != 'Linux' && 'dist' }}
           if-no-files-found: error
           compression-level: 6
