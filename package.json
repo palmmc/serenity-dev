@@ -17,7 +17,7 @@
     "release": "yarn changeset publish",
     "release:beta": "yarn changeset publish --no-git-tag --snapshot --tag beta",
     "bundle": "bun build --compile --packages bundle --target=bun --outfile=dist/serenityjs-latest bundle/index.ts",
-    "bundle:beta": "bun build --compile --packages bundle --target=bun --outfile=../Enderquest-SB/server bundle/index.ts && bun build --compile --packages bundle --target=bun-linux-x64 --outfile=../Enderquest-SB/server bundle/index.ts",
+    "bundle:beta": "bun build --compile --packages bundle --target=bun --outfile=../Enderquest-SB/server bundle/index.ts",
     "changeset": "changeset",
     "prepare": "husky"
   },
