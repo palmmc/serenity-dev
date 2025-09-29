@@ -11,11 +11,14 @@ import {
   UpdateBlockPacket,
   Vector3f
 } from "@serenityjs/protocol";
+import { StringTag } from "@serenityjs/nbt";
 
 import {
   CommandResponse,
   DimensionProperties,
   EntityQueryOptions,
+  RawMessage,
+  RawText,
   StructurePlaceOptions
 } from "../types";
 import {
@@ -37,6 +40,7 @@ import { BlockIdentifier, EntityIdentifier } from "../enums";
 import { Serenity } from "../serenity";
 import { CommandExecutionState } from "../commands";
 import { BlockPermutationUpdateSignal } from "../events";
+import { BiomeType } from "../biome";
 
 import { World } from "./world";
 import { TerrainGenerator } from "./generator";
@@ -362,12 +366,12 @@ class Dimension {
         this.queriedChunksFromProvider.add(hash);
 
         // Get all the block data from the chunk
-        const storages = chunk.getAllBlockStorages();
+        const blockStorages = chunk.getAllBlockStorages();
 
         // Check if there is any block storage in the chunk
-        if (storages.length > 0) {
+        if (blockStorages.length > 0) {
           // Iterate through the blocks and add them to the chunk.
-          for (const storage of storages) {
+          for (const storage of blockStorages) {
             // Get the position of the block storage
             const position = storage.getPosition();
 
@@ -376,6 +380,28 @@ class Dimension {
 
             // Add the block to the block cache
             this.blocks.set(BlockPosition.hash(block.position), block);
+          }
+        }
+
+        // Get all the entity data from the chunk
+        const entities = chunk.getAllEntityStorages();
+
+        // Check if there is any entity storage in the chunk
+        if (entities.length > 0) {
+          // Iterate through the entities and add them to the chunk.
+          for (const [, storage] of entities) {
+            // Get the identifier of the entity
+            const identifier = storage.get<StringTag>("identifier");
+
+            // Skip if the identifier does not exist or if the entity is a player
+            if (!identifier || identifier.valueOf() === EntityIdentifier.Player)
+              continue;
+
+            // Create a new entity instance using the entity storage
+            const entity = new Entity(this, identifier.valueOf(), { storage });
+
+            // Spawn the entity in the dimension
+            entity.spawn({ initialSpawn: false });
           }
         }
       }
@@ -398,12 +424,12 @@ class Dimension {
         this.queriedChunksFromProvider.add(hash);
 
         // Get all the block data from the chunk
-        const storages = chunk.getAllBlockStorages();
+        const blockStorages = chunk.getAllBlockStorages();
 
         // Check if there is any block storage in the chunk
-        if (storages.length > 0) {
+        if (blockStorages.length > 0) {
           // Iterate through the blocks and add them to the chunk.
-          for (const storage of storages) {
+          for (const storage of blockStorages) {
             // Get the position of the block storage
             const position = storage.getPosition();
 
@@ -412,6 +438,28 @@ class Dimension {
 
             // Add the block to the block cache
             this.blocks.set(BlockPosition.hash(block.position), block);
+          }
+        }
+
+        // Get all the entity data from the chunk
+        const entities = chunk.getAllEntityStorages();
+
+        // Check if there is any entity storage in the chunk
+        if (entities.length > 0) {
+          // Iterate through the entities and add them to the chunk.
+          for (const [, storage] of entities) {
+            // Get the identifier of the entity
+            const identifier = storage.get<StringTag>("identifier");
+
+            // Skip if the identifier does not exist or if the entity is a player
+            if (!identifier || identifier.valueOf() === EntityIdentifier.Player)
+              continue;
+
+            // Create a new entity instance using the entity storage
+            const entity = new Entity(this, identifier.valueOf(), { storage });
+
+            // Spawn the entity in the dimension
+            entity.spawn({ initialSpawn: false });
           }
         }
       }
@@ -441,6 +489,40 @@ class Dimension {
 
     // Write the chunk to the provider
     return void this.world.provider.writeChunk(chunk, this);
+  }
+
+  /**
+   * Get a biome from the dimension at a given position.
+   * @param position The position to get the biome from.
+   * @returns The biome at the specified position.
+   */
+  public getBiome(position: IPosition): BiomeType {
+    // Convert the position to a chunk position
+    const cx = position.x >> 4;
+    const cz = position.z >> 4;
+
+    // Get the chunk of the provided position
+    const chunk = this.getChunk(cx, cz);
+
+    // Get the biome from the chunk
+    return chunk.getBiome(position);
+  }
+
+  /**
+   * Set a biome in the dimension at a given position.
+   * @param position The position to set the biome at.
+   * @param biome The biome to set.
+   */
+  public setBiome(position: IPosition, biome: BiomeType): void {
+    // Convert the position to a chunk position
+    const cx = position.x >> 4;
+    const cz = position.z >> 4;
+
+    // Get the chunk of the provided position
+    const chunk = this.getChunk(cx, cz);
+
+    // Set the biome in the chunk
+    chunk.setBiome(position, biome);
   }
 
   /**
@@ -581,21 +663,27 @@ class Dimension {
    * Broadcasts a message to all players in the dimension.
    * @param message The message to broadcast.
    */
-  public sendMessage(message: string): void {
+  public sendMessage(message: string | RawMessage): void {
     // Construct the text packet.
     const packet = new TextPacket();
 
+    // Prepare the raw text object.
+    const rawText: RawText = {};
+
+    // Check if the message is a string or RawMessage
+    if (typeof message === "string") rawText.rawtext = [{ text: message }];
+    else rawText.rawtext = message.rawtext;
+
     // Assign the packet data.
-    packet.type = TextPacketType.Raw;
-    packet.needsTranslation = false;
+    packet.type = TextPacketType.Json;
+    packet.needsTranslation = true;
     packet.source = null;
-    packet.message = message;
+    packet.message = JSON.stringify(rawText);
     packet.parameters = null;
     packet.xuid = "";
     packet.platformChatId = "";
-    packet.filtered = message;
+    packet.filtered = JSON.stringify(rawText);
 
-    // Send the packet.
     this.broadcast(packet);
   }
 
@@ -789,6 +877,9 @@ class Dimension {
     // Create a new Entity instance with the dimension and type
     const entity = new Entity(this, type);
 
+    // Get the x y z from the position
+    const { x, y, z } = position;
+
     // As a Serenity standard, we will add the gravity, physics, movement traits to the entity
     entity.addTrait(EntityGravityTrait);
     entity.addTrait(EntityPhysicsTrait);
@@ -796,9 +887,7 @@ class Dimension {
     entity.addTrait(EntityCollisionTrait);
 
     // Set the entity position
-    entity.position.x = position.x;
-    entity.position.y = position.y + 1;
-    entity.position.z = position.z;
+    entity.position = new Vector3f(x, y + 1, z);
 
     // Spawn the entity
     return entity.spawn();
@@ -818,10 +907,11 @@ class Dimension {
     // Set the world in the item stack if it doesn't exist
     if (!itemStack.world) itemStack.world = this.world;
 
+    // Get the x y z from the position
+    const { x, y, z } = position;
+
     // Set the entity position
-    entity.position.x = position.x;
-    entity.position.y = position.y;
-    entity.position.z = position.z;
+    entity.position = new Vector3f(x, y, z);
 
     // Create a new item trait, this will register the item to the entity
     entity.addTrait(EntityItemStackTrait, { itemStack });
