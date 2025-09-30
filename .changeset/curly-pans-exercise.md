@@ -10,4 +10,4 @@
 "@serenityjs/raknet": patch
 ---
 
-init v0.8.13-beta
+init v0.8.14-beta
