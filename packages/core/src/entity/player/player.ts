@@ -34,7 +34,7 @@ import {
   UpdatePlayerGameTypePacket,
   Vector3f
 } from "@serenityjs/protocol";
-import { IntTag } from "@serenityjs/nbt";
+import { CompoundTag, FloatTag, IntTag } from "@serenityjs/nbt";
 
 import {
   EntitySpawnOptions,
@@ -1047,30 +1047,25 @@ class Player extends Entity {
 
       // Set the new level and experience progress
       leveling.setLevel(currentLevel);
-      leveling.setExperienceProgress(
-        xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0
-      );
+      this.setStorageEntry("PlayerLevelProgress", new FloatTag(xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0))
+      leveling.refreshAttributes()
 
       // Return the new experience points
       return currentXp;
     } else {
       // Add the PlayerLevelingTrait to the player
       const leveling = this.addTrait(PlayerLevelingTrait);
-
-      // Set the experience in the PlayerLevelingTrait
       leveling.setExperience(value);
-
-      // Return the new experience points
-      return leveling.getExperience();
+      return leveling.getExperience()
     }
   }
 
   /**
-   * Remove experience from the player.
-   * @param value The amount of experience to remove.
-   * @returns The new experience progress of the player after adding the specified value.
-   * @note This method is dependent on the `PlayerLevelingTrait` being added to the player.
-   */
+ * Remove experience from the player.
+ * @param value The amount of experience to remove.
+ * @returns The new experience progress of the player after adding the specified value.
+ * @note This method is dependent on the `PlayerLevelingTrait` being added to the player.
+ */
   public removeExperience(value: number): number {
     // Check if the player has the PlayerLevelingTrait
     if (this.hasTrait(PlayerLevelingTrait)) {
@@ -1118,9 +1113,8 @@ class Player extends Entity {
 
       // Set the new level and experience progress
       leveling.setLevel(currentLevel);
-      leveling.setExperienceProgress(
-        xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0
-      );
+      this.setStorageEntry("PlayerLevelProgress", new FloatTag(xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0))
+      leveling.refreshAttributes()
 
       // Return the new experience points
       return currentXp;
@@ -1142,7 +1136,7 @@ class Player extends Entity {
       const leveling = this.getTrait(PlayerLevelingTrait);
 
       // Return the total experience of the player
-      return leveling.getTotalXp();
+      return leveling.getTotalXp()
     }
 
     // If the PlayerLevelingTrait is not present, return 0
