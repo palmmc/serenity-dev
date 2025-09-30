@@ -10,7 +10,7 @@ import { resolve } from "node:path";
 import { BinaryStream, Endianness } from "@serenityjs/binarystream";
 import { Leveldb } from "@serenityjs/leveldb";
 import { DimensionType } from "@serenityjs/protocol";
-import { CompoundTag, LongTag } from "@serenityjs/nbt";
+import { ByteTag, CompoundTag, LongTag } from "@serenityjs/nbt";
 
 import { BiomeStorage, Chunk, SubChunk } from "../chunk";
 import { Dimension } from "../dimension";
@@ -74,7 +74,12 @@ class LevelDBProvider extends WorldProvider {
 
     // Get the world properties.
     const properties = this.world.properties;
-    properties.dimensions = dimensions;
+    properties.dimensions = dimensions.map((dim) => {
+      return {
+        ...dim,
+        generator: "void"
+      };
+    });
 
     // Write the properties to the world directory.
     writeFileSync(
@@ -217,6 +222,7 @@ class LevelDBProvider extends WorldProvider {
       if (entities.length > 0) {
         // Iterate through the entities and add them to the chunk.
         for (const storage of entities) {
+          if (storage.get<ByteTag>("Persistent")?.valueOf() === 0) continue;
           // Get the unique id of the entity.
           const uniqueId = storage.get<LongTag>("UniqueID");
 
@@ -850,6 +856,86 @@ class LevelDBProvider extends WorldProvider {
 
     // Return the created world.
     return world;
+  }
+
+  public static async loadWorld(serenity: Serenity, worldId: string) {
+    // Resolve the path for the worlds directory.
+    const path = resolve("./worlds");
+
+    // Check if the path provided exists.
+    // If it does not exist, create the directory.
+    if (!existsSync(path)) mkdirSync(path);
+
+    // Get the path for the world.
+    const worldPath = resolve(path, worldId);
+
+    // Get the world properties.
+    let properties: Partial<WorldProperties> = { identifier: worldId };
+    if (existsSync(resolve(worldPath, "properties.json"))) {
+      // Read the properties of the world.
+      properties = JSON.parse(
+        readFileSync(resolve(worldPath, "properties.json"), "utf-8")
+      );
+    }
+
+    // Check if the world directory contains a structures directory.
+    if (!existsSync(resolve(worldPath, "structures")))
+      // Create the structures directory if it does not exist.
+      mkdirSync(resolve(worldPath, "structures"));
+
+    // Create a new world instance.
+    const world = new World(serenity, new this(worldPath), properties);
+
+    // Create a new WorldInitializedSignal instance.
+    new WorldInitializeSignal(world).emit();
+
+    // Write the properties to the world.
+    writeFileSync(
+      resolve(worldPath, "properties.json"),
+      JSON.stringify(world.properties, null, 2)
+    );
+
+    // Read all the structures in the world directory.
+    const files = readdirSync(resolve(worldPath, "structures"), {
+      withFileTypes: true
+    }).filter(
+      // Filter only files that end with .mcstructure.
+      (dirent) => dirent.isFile() && dirent.name.endsWith(".mcstructure")
+    );
+
+    // Attempt to read the structures from the world directory.
+    for (const file of files) {
+      try {
+        // Create the structure from the file.
+        const path = resolve(worldPath, "structures", file.name);
+
+        // Read the structure file.
+        const stream = new BinaryStream(readFileSync(path));
+
+        // Create a new structure instance from the file.
+        const structure = Structure.from(world, CompoundTag.read(stream));
+
+        // Parse the identifier from the file name.
+        const identifier = file.name.replace(/\.mcstructure$/, "");
+
+        // Add the structure to the world.
+        world.structures.set(identifier, structure);
+
+        // Log a debug message indicating the structure was loaded.
+        world.logger.debug(
+          `Loaded structure "${identifier}" from file "${file.name}" for world "${world.properties.identifier}."`
+        );
+      } catch (reason) {
+        // Log the error if the structure failed to load.
+        world.logger.error(
+          `Failed to load structure from file ${file.name} for world ${world.properties.identifier}. Reason:`,
+          reason
+        );
+      }
+    }
+
+    // Register world to serenity instance.
+    serenity.registerWorld(world)
   }
 
   /**
