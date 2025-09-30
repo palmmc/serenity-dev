@@ -15,6 +15,7 @@ import { Handlers } from "./handlers";
 import {
   DefaultWorldProviderProperties,
   Dimension,
+  LevelDBProvider,
   SuperflatGenerator,
   type TerrainGenerator,
   TickSchedule,
