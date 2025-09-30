@@ -34,7 +34,7 @@ import {
   UpdatePlayerGameTypePacket,
   Vector3f
 } from "@serenityjs/protocol";
-import { CompoundTag, FloatTag, IntTag } from "@serenityjs/nbt";
+import { FloatTag, IntTag } from "@serenityjs/nbt";
 
 import {
   EntitySpawnOptions,
