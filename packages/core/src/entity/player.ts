@@ -35,7 +35,7 @@ import {
   UpdatePlayerGameTypePacket,
   Vector3f
 } from "@serenityjs/protocol";
-import { CompoundTag, FloatTag } from "@serenityjs/nbt";
+import { CompoundTag, FloatTag, IntTag } from "@serenityjs/nbt";
 
 import {
   EntitySpawnOptions,
@@ -162,8 +162,8 @@ class Player extends Entity {
   public entityTarget: Entity | null = null;
 
   /**
- * The current additional mining speed multiplier of the player.
- */
+   * The current additional mining speed multiplier of the player.
+   */
   public miningSpeed: number = 1;
 
   /**
@@ -1069,7 +1069,7 @@ class Player extends Entity {
 
       // Set the new level and experience progress
       leveling.setLevel(currentLevel);
-      this.nbt.set("PlayerLevelProgress", new FloatTag(xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0))
+      this.setStorageEntry("PlayerLevelProgress", new FloatTag(xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0))
       leveling.refreshAttributes()
 
       // Return the new experience points
@@ -1135,7 +1135,7 @@ class Player extends Entity {
 
       // Set the new level and experience progress
       leveling.setLevel(currentLevel);
-      this.nbt.set("PlayerLevelProgress", new FloatTag(xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0))
+      this.setStorageEntry("PlayerLevelProgress", new FloatTag(xpForNextLevel > 0 ? currentXp / xpForNextLevel : 0))
       leveling.refreshAttributes()
 
       // Return the new experience points
