@@ -14,7 +14,7 @@ import {
   ItemStackResponseInfo,
   ItemStackResponsePacket,
   ItemStackResponseResult,
-  Packet
+  Packet,
 } from "@serenityjs/protocol";
 
 import { NetworkHandler } from "../network";
@@ -22,7 +22,7 @@ import { ItemStack } from "../item";
 import { Player } from "../entity";
 import {
   PlayerContainerInteractionSignal,
-  PlayerCraftRecipeSignal
+  PlayerCraftRecipeSignal,
 } from "../events";
 
 class ItemStackRequestHandler extends NetworkHandler {
@@ -163,7 +163,11 @@ class ItemStackRequestHandler extends NetworkHandler {
     if (!source || !destination) {
       // Log an error message
       this.serenity.logger.error(
-        `Invalid source or destination container for take or place action. Source: ${ContainerName[action.source.container.identifier]}, Destination: ${ContainerName[action.destination.container.identifier]}`
+        `Invalid source or destination container for take or place action. Source: ${
+          ContainerName[action.source.container.identifier]
+        }, Destination: ${
+          ContainerName[action.destination.container.identifier]
+        }`
       );
 
       // Return null to indicate failure.
@@ -202,7 +206,9 @@ class ItemStackRequestHandler extends NetworkHandler {
     if (!item) {
       // Log an error message
       this.serenity.logger.error(
-        `Failed to take item from source container. Source: ${ContainerName[action.source.container.identifier]}, Slot: ${sourceSlot}, Amount: ${amount}`
+        `Failed to take item from source container. Source: ${
+          ContainerName[action.source.container.identifier]
+        }, Slot: ${sourceSlot}, Amount: ${amount}`
       );
 
       // Return null to indicate failure.
@@ -232,7 +238,7 @@ class ItemStackRequestHandler extends NetworkHandler {
         action.destination.container,
         destinationSlot,
         updatedDestinationStack
-      )
+      ),
     ];
   }
 
@@ -248,7 +254,11 @@ class ItemStackRequestHandler extends NetworkHandler {
     if (!source || !destination) {
       // Log an error message
       this.serenity.logger.error(
-        `Invalid source or destination container for swap action. Source: ${ContainerName[action.source.container.identifier]}, Destination: ${ContainerName[action.destination.container.identifier]}`
+        `Invalid source or destination container for swap action. Source: ${
+          ContainerName[action.source.container.identifier]
+        }, Destination: ${
+          ContainerName[action.destination.container.identifier]
+        }`
       );
 
       // Return null to indicate failure.
@@ -284,7 +294,7 @@ class ItemStackRequestHandler extends NetworkHandler {
         action.destination.container,
         destinationSlot,
         destinationStack
-      )
+      ),
     ];
   }
 
@@ -299,7 +309,9 @@ class ItemStackRequestHandler extends NetworkHandler {
     if (!source) {
       // Log an error message
       this.serenity.logger.error(
-        `Invalid source container for drop action. Source: ${ContainerName[action.source.container.identifier]}`
+        `Invalid source container for drop action. Source: ${
+          ContainerName[action.source.container.identifier]
+        }`
       );
 
       // Return null to indicate failure.
@@ -331,7 +343,7 @@ class ItemStackRequestHandler extends NetworkHandler {
 
     // Return the container info array.
     return [
-      this.buildContainerInfo(action.source.container, sourceSlot, sourceStack)
+      this.buildContainerInfo(action.source.container, sourceSlot, sourceStack),
     ];
   }
 
@@ -346,7 +358,9 @@ class ItemStackRequestHandler extends NetworkHandler {
     if (!source) {
       // Log an error message
       this.serenity.logger.error(
-        `Invalid source container for destroy or consume action. Source: ${ContainerName[action.source.container.identifier]}`
+        `Invalid source container for destroy or consume action. Source: ${
+          ContainerName[action.source.container.identifier]
+        }`
       );
 
       // Return null to indicate failure.
@@ -366,7 +380,9 @@ class ItemStackRequestHandler extends NetworkHandler {
     if (!item) {
       // Log an error message
       this.serenity.logger.error(
-        `No item found in source container for destroy or consume action. Source: ${ContainerName[action.source.container.identifier]}, Slot: ${sourceSlot}`
+        `No item found in source container for destroy or consume action. Source: ${
+          ContainerName[action.source.container.identifier]
+        }, Slot: ${sourceSlot}`
       );
 
       // Return null to indicate failure.
@@ -381,7 +397,7 @@ class ItemStackRequestHandler extends NetworkHandler {
 
     // Return the container info array.
     return [
-      this.buildContainerInfo(action.source.container, sourceSlot, sourceStack)
+      this.buildContainerInfo(action.source.container, sourceSlot, sourceStack),
     ];
   }
 
@@ -393,7 +409,9 @@ class ItemStackRequestHandler extends NetworkHandler {
     if (player.getGamemode() !== Gamemode.Creative) {
       // Log an error message
       this.serenity.logger.error(
-        `Player is not in creative mode for craft creative action. Gamemode: ${Gamemode[player.getGamemode()]}`
+        `Player is not in creative mode for craft creative action. Gamemode: ${
+          Gamemode[player.getGamemode()]
+        }`
       );
 
       // Return null to indicate failure.
@@ -402,14 +420,16 @@ class ItemStackRequestHandler extends NetworkHandler {
 
     // Get the destination container.
     const destination = player.getContainer({
-      identifier: ContainerName.CreativeOutput
+      identifier: ContainerName.CreativeOutput,
     });
 
     // Check if the destination container exists.
     if (!destination) {
       // Log an error message
       this.serenity.logger.error(
-        `Invalid destination container for craft creative action. Destination: ${ContainerName[ContainerName.CreativeOutput]}`
+        `Invalid destination container for craft creative action. Destination: ${
+          ContainerName[ContainerName.CreativeOutput]
+        }`
       );
 
       // Return null to indicate failure.
@@ -439,7 +459,7 @@ class ItemStackRequestHandler extends NetworkHandler {
     // Create the item stack from the network instance.
     const itemStack = ItemStack.fromNetworkInstance(creativeItem.descriptor, {
       stackSize: action.amount,
-      storage: creativeItem.stackStorage // NBT data for the item stack
+      storage: creativeItem.stackStorage, // NBT data for the item stack
     });
 
     // Check if the item stack was created successfully.
@@ -462,7 +482,7 @@ class ItemStackRequestHandler extends NetworkHandler {
         { identifier: ContainerName.CreativeOutput },
         0,
         destination.getItem(0)
-      )
+      ),
     ];
   }
 
@@ -472,14 +492,16 @@ class ItemStackRequestHandler extends NetworkHandler {
   ): Array<ItemStackResponseContainerInfo> | null {
     // Get the destination container.
     const destination = player.getContainer({
-      identifier: ContainerName.CraftingOutput
+      identifier: ContainerName.CraftingOutput,
     });
 
     // Check if the destination container exists.
     if (!destination) {
       // Log an error message
       this.serenity.logger.error(
-        `Invalid destination container for craft recipe action. Destination: ${ContainerName[ContainerName.CraftingOutput]}`
+        `Invalid destination container for craft recipe action. Destination: ${
+          ContainerName[ContainerName.CraftingOutput]
+        }`
       );
 
       // Return null to indicate failure.
@@ -531,7 +553,7 @@ class ItemStackRequestHandler extends NetworkHandler {
         { identifier: ContainerName.CraftingOutput },
         0,
         destination.getItem(0)
-      )
+      ),
     ];
   }
 
@@ -556,9 +578,9 @@ class ItemStackRequestHandler extends NetworkHandler {
           customName: itemStack ? itemStack.getDisplayName() : "",
           itemStackId: itemStack ? itemStack.networkStackId : 0,
           durabilityCorrection: itemStack ? itemStack.getDamgeDurability() : 0,
-          filterCustomName: itemStack ? itemStack.getDisplayName() : ""
-        }
-      ]
+          filterCustomName: itemStack ? itemStack.getDisplayName() : "",
+        },
+      ],
     };
   }
 }
