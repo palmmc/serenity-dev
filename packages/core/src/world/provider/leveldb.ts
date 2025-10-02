@@ -858,7 +858,7 @@ class LevelDBProvider extends WorldProvider {
     return world;
   }
 
-  public static async loadWorld(serenity: Serenity, worldId: string) {
+  public static async loadWorld(serenity: Serenity, worldId: string): Promise<void | World> {
     // Resolve the path for the worlds directory.
     const path = resolve("./worlds");
 
@@ -936,6 +936,7 @@ class LevelDBProvider extends WorldProvider {
 
     // Register world to serenity instance.
     serenity.registerWorld(world)
+    return world;
   }
 
   /**

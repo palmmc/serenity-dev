@@ -57,19 +57,20 @@ class BlockInventoryTrait extends BlockTrait {
     );
   }
 
-  public onInteract({ cancel, origin }: BlockInteractionOptions): void {
+  public onInteract({ cancel, origin }: BlockInteractionOptions): boolean {
     // Check if the block interaction has been cancelled
-    if (cancel || !origin) return;
+    if (cancel || !origin) return false;
 
     // Check if the player is sneaking
     if (
       origin.isSneaking ||
       !origin.abilities.getAbility(AbilityIndex.OpenContainers)
     )
-      return;
+      return false;
 
     // Show the container to the player
     this.container.show(origin);
+    return false;
   }
 
   public onBreak(): void {
