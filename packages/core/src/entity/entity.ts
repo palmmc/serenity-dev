@@ -564,6 +564,13 @@ class Entity {
    * @param maxDistance The maximum distance from the player in blocks to check for a block. Default is 5.
    * @returns The block the player is looking at, or null if no block is found.
    */
+  public getBlockFromViewDirection(options: BlockRaycastOptions) {
+
+    // Get options.
+    const includeLiquids = options?.includeLiquidBlocks ?? false;
+    const includePassable = options?.includePassableBlocks ?? false;
+    const maxDistance = options?.maxDistance ?? 5;
+
   public getBlockFromViewDirection(
     options: BlockRaycastOptions = { maxDistance: 5 }
   ) {
@@ -592,6 +599,7 @@ class Entity {
 
     // Determine step direction.
     const stepDirection = new Vector3f(
+    const stepDirection = new Vector3f(
       Math.sign(directionVector.x),
       Math.sign(directionVector.y),
       Math.sign(directionVector.z)
@@ -599,12 +607,17 @@ class Entity {
 
     // Calculate distance of one block in a given direction.
     const tDelta = new Vector3f(
+    const tDelta = new Vector3f(
       directionVector.x === 0 ? Infinity : Math.abs(1 / directionVector.x),
       directionVector.y === 0 ? Infinity : Math.abs(1 / directionVector.y),
       directionVector.z === 0 ? Infinity : Math.abs(1 / directionVector.z)
     );
 
     // Calculate the distance to the next block.
+    const nextDistance = new Vector3f(
+      stepDirection.x > 0 ? currentPos.x + 1 - eyePosition.x : eyePosition.x - currentPos.x,
+      stepDirection.y > 0 ? currentPos.y + 1 - eyePosition.y : eyePosition.y - currentPos.y,
+      stepDirection.z > 0 ? currentPos.z + 1 - eyePosition.z : eyePosition.z - currentPos.z
     const nextDistance = new Vector3f(
       stepDirection.x > 0
         ? currentPos.x + 1 - eyePosition.x
@@ -622,6 +635,10 @@ class Entity {
       tDelta.x * nextDistance.x,
       tDelta.y * nextDistance.y,
       tDelta.z * nextDistance.z
+    const tMax = new Vector3f(
+      tDelta.x * nextDistance.x,
+      tDelta.y * nextDistance.y,
+      tDelta.z * nextDistance.z
     );
 
     let distance = 0;
@@ -633,7 +650,15 @@ class Entity {
           distance = tMax.x;
           currentPos.x += stepDirection.x;
           tMax.x += tDelta.x;
+      if (tMax.x < tMax.y) {
+        if (tMax.x < tMax.z) {
+          distance = tMax.x;
+          currentPos.x += stepDirection.x;
+          tMax.x += tDelta.x;
         } else {
+          distance = tMax.z;
+          currentPos.z += stepDirection.z;
+          tMax.z += tDelta.z;
           distance = tMax.z;
           currentPos.z += stepDirection.z;
           tMax.z += tDelta.z;
@@ -643,7 +668,14 @@ class Entity {
           distance = tMax.y;
           currentPos.y += stepDirection.y;
           tMax.y += tDelta.y;
+        if (tMax.y < tMax.z) {
+          distance = tMax.y;
+          currentPos.y += stepDirection.y;
+          tMax.y += tDelta.y;
         } else {
+          distance = tMax.z;
+          currentPos.z += stepDirection.z;
+          tMax.z += tDelta.z;
           distance = tMax.z;
           currentPos.z += stepDirection.z;
           tMax.z += tDelta.z;
@@ -654,6 +686,13 @@ class Entity {
       if (distance >= maxDistance) break;
 
       const block = dimension.getBlock(currentPos);
+      if (block && !block.isAir) {
+        // Liquid block check.
+        if (!includeLiquids && block.isLiquid) continue;
+
+        // Passable block check.
+        // Unused, we don't have a system for this.
+
       if (block && !block.isAir) {
         // Liquid block check.
         if (!includeLiquids && block.isLiquid) continue;
