@@ -564,6 +564,10 @@ class Serenity extends Emitter<WorldEventSignals & ServerEvents> {
     // Remove all listeners of the world provider.
     world.removeAll();
 
+    // Close db connection and remove lock.
+    const db = (world.provider as LevelDBProvider).db;
+    if (db) db.close();
+
     // Remove the world from registered worlds.
     this.worlds.delete(world.identifier);
 
