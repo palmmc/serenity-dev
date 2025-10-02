@@ -11,7 +11,7 @@ import {
   MoveDeltaFlags,
   Rotation,
   UpdateAttributesPacket,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 import { BaseTag, ListTag, StringTag } from "@serenityjs/nbt";
 
@@ -20,7 +20,7 @@ import {
   BlockIdentifier,
   CardinalDirection,
   EntityIdentifier,
-  EntityInteractMethod
+  EntityInteractMethod,
 } from "../enums";
 import {
   CommandResponse,
@@ -29,7 +29,7 @@ import {
   EntityEffectOptions,
   EntityProperties,
   EntitySpawnOptions,
-  JSONLikeValue
+  JSONLikeValue,
 } from "../types";
 import { Serenity } from "../serenity";
 import { Chunk } from "../world/chunk";
@@ -43,7 +43,7 @@ import {
   EntityDropItemSignal,
   EntityHitSignal,
   EntitySpawnedSignal,
-  PlayerInteractWithEntitySignal
+  PlayerInteractWithEntitySignal,
 } from "../events";
 import { ScoreboardIdentity } from "../world/scoreboard";
 
@@ -56,7 +56,7 @@ import {
   EntityInventoryTrait,
   EntityNameableTrait,
   EntityTrait,
-  PlayerEntityRenderingTrait
+  PlayerEntityRenderingTrait,
 } from "./traits";
 import { Player } from "./player";
 import { EntityInputInfo } from "./input-info";
@@ -912,7 +912,7 @@ class Entity {
       initialSpawn: false,
       dimension: this.dimension,
       changedDimensions: false,
-      ...options
+      ...options,
     };
 
     // Create a new EntitySpawnedSignal
@@ -983,7 +983,7 @@ class Entity {
     options = {
       hasDied: false,
       changedDimensions: false,
-      ...options
+      ...options,
     };
 
     // Create a new EntityDespawnedSignal
@@ -1051,7 +1051,7 @@ class Entity {
       killerSource: null,
       damageCause: ActorDamageCause.None,
       cancel: false,
-      ...options
+      ...options,
     };
 
     // Create a new EntityDieSignal
@@ -1278,7 +1278,7 @@ class Entity {
         trait.onTeleport?.({
           from: this.position,
           to: position,
-          changedDimensions: !!dimension
+          changedDimensions: !!dimension,
         });
       } catch (reason) {
         // Log the error to the console
@@ -1487,7 +1487,7 @@ class Entity {
     const options = {
       origin: this,
       amount,
-      cancelled: false
+      cancelled: false,
     };
 
     // Iterate over the traits of the item stack
