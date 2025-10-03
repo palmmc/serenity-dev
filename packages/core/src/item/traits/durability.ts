@@ -130,6 +130,8 @@ class ItemStackDurabilityTrait extends ItemStackTrait {
           return 59;
         case ItemTypeToolTier.Stone:
           return 131;
+        case ItemTypeToolTier.Copper:
+          return 196;
         case ItemTypeToolTier.Iron:
           return 250;
         case ItemTypeToolTier.Golden:
@@ -166,7 +168,7 @@ class ItemStackDurabilityTrait extends ItemStackTrait {
     if (options.canceled || options.method !== ItemUseMethod.Attack) return;
 
     // Check if the player is in creative mode
-    if (player.gamemode === Gamemode.Creative) return;
+    if (player.getGamemode() === Gamemode.Creative) return;
 
     // Process the damage for the item stack
     return this.processDamage(player);
@@ -180,7 +182,7 @@ class ItemStackDurabilityTrait extends ItemStackTrait {
     if (options.canceled || options.method !== ItemUseMethod.UseTool) return;
 
     // Check if the player is in creative mode
-    if (player.gamemode === Gamemode.Creative) return;
+    if (player.getGamemode() === Gamemode.Creative) return;
 
     // Process the damage for the item stack
     return this.processDamage(player);

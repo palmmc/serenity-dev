@@ -40,7 +40,7 @@ const register = (world: World) => {
               target.removeEffect(effectType);
             }
             target.addEffect(effectType, seconds, { amplifier, showParticles });
-            messages.push(`§fGave ${effectType} * ${amplifier} to ${target.nameTag} for ${seconds} seconds`);
+            messages.push(`§fGave ${effectType} * ${amplifier} to ${target.getNametag()} for ${seconds} seconds`);
           }
 
           // Return the message
@@ -72,9 +72,9 @@ const register = (world: World) => {
             for (const target of targets) {
               if (target.hasEffect(effectType)) {
                 target.removeEffect(effectType);
-                messages.push(`§fTook ${effect} from ${target.nameTag}`);
+                messages.push(`§fTook ${effect} from ${target.getNametag()}`);
               } else {
-                messages.push(`§cCouldn't take ${effect} from ${target.nameTag} as they do not have the effect`);
+                messages.push(`§cCouldn't take ${effect} from ${target.getNametag()} as they do not have the effect`);
               }
             }
           } else {
@@ -83,7 +83,7 @@ const register = (world: World) => {
               for (const effect of effects) {
                 target.removeEffect(effect);
               }
-              messages.push(`§fTook all effects from ${target.nameTag}`);
+              messages.push(`§fTook all effects from ${target.getNametag()}`);
             }
           }
 

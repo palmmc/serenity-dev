@@ -26,11 +26,11 @@ class DisconnectHandler extends NetworkHandler {
     const defaultWorld = this.serenity.getWorld()
 
     // Set their player position so they spawn at the default world spawn.
-    const storage = player.getLevelStorage()
+    const storage = player.getStorage()
     storage.setPosition(defaultWorld.getDimension().spawnPosition)
 
     // Save the player's data to the default dimension.
-    defaultWorld.provider.writePlayer(storage);
+    defaultWorld.provider.writePlayer(player.uuid, storage);
 
     // Nullify the player's permissions
     player.permissions.player = null;

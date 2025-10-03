@@ -27,7 +27,7 @@ interface ClientData {
   PieceTintColors: Array<PieceTintColor>;
   PlatformOfflineId: string;
   PlatformOnlineId: string;
-  PlayFabId: string;
+  PlayformType: number;
   PremiumSkin: boolean;
   SelfSignedId: string;
   ServerAddress: string;

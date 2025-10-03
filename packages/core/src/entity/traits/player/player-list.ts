@@ -63,7 +63,7 @@ class PlayerListTrait extends PlayerTrait {
       uuid: player.uuid,
       xuid: player.xuid,
       username: player.username,
-      skin: player.skin,
+      skin: player.skin.getSerialized(),
       platformBuild: player.clientSystemInfo.os,
       platformChatIdentifier: "",
       isHost: false,
@@ -90,11 +90,6 @@ class PlayerListTrait extends PlayerTrait {
     for (const player of adding) {
       // Add the player to the player list
       this.players.add(player.uuid);
-
-      // Update the player's metadata and abilities
-      player.metadata.update();
-      player.abilities.update();
-      player.abilities.update();
     }
 
     // Update the player list

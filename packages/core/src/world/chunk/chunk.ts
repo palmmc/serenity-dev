@@ -5,9 +5,11 @@ import {
   type IPosition
 } from "@serenityjs/protocol";
 import { BinaryStream } from "@serenityjs/binarystream";
+import { CompoundTag } from "@serenityjs/nbt";
 
 import { BlockIdentifier } from "../../enums";
 import { BlockLevelStorage, BlockPermutation } from "../../block";
+import { BiomeType } from "../../biome";
 
 import { SubChunk } from "./sub-chunk";
 import { BiomeStorage } from "./biome-storage";
@@ -59,8 +61,9 @@ export class Chunk {
   private readonly blocks: Map<bigint, BlockLevelStorage> = new Map();
 
   /**
-   *
+   * The entity level storage of the chunk, mapped by their unique id.
    */
+  private readonly entities: Map<bigint, CompoundTag> = new Map();
 
   /**
    * The dimension type of the chunk.
@@ -178,7 +181,7 @@ export class Chunk {
    * @param position The block position to get the biome at.
    * @returns The biome at the given block position.
    */
-  public getBiome(position: IPosition): number {
+  public getBiome(position: IPosition): BiomeType {
     // Get the x, y and z coordinates from the position.
     const { x, y, z } = position;
 
@@ -186,16 +189,19 @@ export class Chunk {
     const subchunk = this.getSubChunk(y >> 4);
 
     // Fetch the biome from the biome storage.
-    return subchunk.getBiome(x & 0xf, y & 0xf, z & 0xf);
+    const biomeId = subchunk.getBiome(x & 0xf, y & 0xf, z & 0xf);
+
+    // Return the biome type.
+    return BiomeType.types.get(biomeId) || BiomeType.types.get(0)!;
   }
 
   /**
    * Set the biome at the given position.
    * @param position The block position to set the biome at.
-   * @param biome The biome to set at the given block position.
+   * @param biome The biome type to set at the given block position.
    * @param dirty If the chunk should be marked as dirty. Default is true.
    */
-  public setBiome(position: IPosition, biome: number, dirty = true): void {
+  public setBiome(position: IPosition, biome: BiomeType, dirty = true): void {
     // Get the x, y and z coordinates from the position.
     const { x, y, z } = position;
 
@@ -203,7 +209,7 @@ export class Chunk {
     const subchunk = this.getSubChunk(y >> 4);
 
     // Set the biome in the biome storage.
-    subchunk.setBiome(x & 0xf, y & 0xf, z & 0xf, biome);
+    subchunk.setBiome(x & 0xf, y & 0xf, z & 0xf, biome.networkId);
 
     // Set the chunk as dirty.
     if (dirty) this.dirty = true;
@@ -377,6 +383,32 @@ export class Chunk {
     }
     // If no data is given, delete the block data.
     else this.blocks.delete(key);
+
+    // Set the chunk as dirty.
+    if (dirty) this.dirty = true;
+  }
+
+  public getAllEntityStorages(): Array<[bigint, CompoundTag]> {
+    return Array.from(this.entities.entries());
+  }
+
+  public hasEntityStorage(uniqueId: bigint): boolean {
+    return this.entities.has(uniqueId);
+  }
+
+  public getEntityStorage(uniqueId: bigint): CompoundTag | null {
+    return this.entities.get(uniqueId) || null;
+  }
+
+  public setEntityStorage(
+    uniqueId: bigint,
+    data: CompoundTag | null,
+    dirty = true
+  ): void {
+    // If data is given, set the entity storage in the map.
+    if (data) this.entities.set(uniqueId, data);
+    // If no data is given, delete the entity data.
+    else this.entities.delete(uniqueId);
 
     // Set the chunk as dirty.
     if (dirty) this.dirty = true;

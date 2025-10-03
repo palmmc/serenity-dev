@@ -40,16 +40,20 @@ const register = (world: World) => {
           // Spawn the entity at the specified location
           const entity = context.origin.dimension.spawnEntity(
             identifier,
-            new Vector3f(x, y, z)
+            new Vector3f(x, y, z),
+            false
           );
 
           // Check if a name tag was provided
           if (context.nameTag.result) {
-            entity.nameTag = context.nameTag.result as string;
-            entity.alwaysShowNameTag = context.alwaysVisible.result
-              ? true
-              : false;
+            entity.setNametag(context.nameTag.result as string);
+            entity.setNametagAlwaysVisible(
+              context.alwaysVisible.result ?? false
+            );
           }
+
+          // Spawn the entity
+          entity.spawn();
 
           // Send the success message
           return {
@@ -82,16 +86,20 @@ const register = (world: World) => {
           // Summon the entity at the specified location
           const entity = dimension.spawnEntity(
             identifier,
-            new Vector3f(x, y, z)
+            new Vector3f(x, y, z),
+            false
           );
 
           // Check if a name tag was provided
           if (context.nameTag.result) {
-            entity.nameTag = context.nameTag.result as string;
-            entity.alwaysShowNameTag = context.alwaysVisible.result
-              ? true
-              : false;
+            entity.setNametag(context.nameTag.result as string);
+            entity.setNametagAlwaysVisible(
+              context.alwaysVisible.result ?? false
+            );
           }
+
+          // Spawn the entity
+          entity.spawn();
         }
       );
     },

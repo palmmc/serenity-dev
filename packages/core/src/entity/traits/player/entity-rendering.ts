@@ -1,6 +1,4 @@
 import {
-  AbilityLayerType,
-  AbilitySet,
   ActorLink,
   ActorLinkType,
   AddEntityPacket,
@@ -48,7 +46,12 @@ class PlayerEntityRenderingTrait extends PlayerTrait {
    */
   public addEntity(entity: Entity): void {
     // Check if the entity is already rendered
-    if (this.entities.has(entity.uniqueId)) return;
+    if (
+      this.entities.has(entity.uniqueId) ||
+      !entity.isAlive || // Verify the entity is alive
+      !entity.isTicking // Verify the entity is ticking (in the world
+    )
+      return;
 
     // Add the entity to the rendered entities
     this.entities.add(entity.uniqueId);
@@ -122,9 +125,10 @@ class PlayerEntityRenderingTrait extends PlayerTrait {
         heldItem === null
           ? new NetworkItemStackDescriptor(0)
           : ItemStack.toNetworkStack(heldItem);
-      packet.gamemode = entity.gamemode;
-      packet.data = [...entity.metadata.values()];
-      packet.properties = entity.sharedProperties.getPropertySyncData();
+      packet.gamemode = entity.getGamemode();
+      packet.data = entity.metadata.getAllActorMetadataAsDataItems();
+      packet.properties =
+        entity.sharedProperties.getSharedPropertiesAsSyncData();
       packet.uniqueEntityId = entity.uniqueId;
       packet.premissionLevel = entity.isOp
         ? PermissionLevel.Operator
@@ -134,17 +138,7 @@ class PlayerEntityRenderingTrait extends PlayerTrait {
         ? CommandPermissionLevel.Operator
         : CommandPermissionLevel.Normal;
 
-      packet.abilities = [
-        {
-          type: AbilityLayerType.Base,
-          abilities: [...entity.abilities.entries()].map(
-            ([ability, value]) => new AbilitySet(ability, value)
-          ),
-          walkSpeed: 0.1,
-          verticalFlySpeed: 1.0,
-          flySpeed: 0.05
-        }
-      ];
+      packet.abilities = entity.abilities.getAllAbilitiesAsLayers();
       packet.links = [];
       packet.deviceId = entity.clientSystemInfo.identifier;
       packet.deviceOS = entity.clientSystemInfo.os;
@@ -208,7 +202,7 @@ class PlayerEntityRenderingTrait extends PlayerTrait {
       packet.item = ItemStack.toNetworkStack(itemComponent.itemStack);
       packet.position = position;
       packet.velocity = entity.velocity;
-      packet.data = [...entity.metadata.values()];
+      packet.data = entity.metadata.getAllActorMetadataAsDataItems();
       packet.fromFishing = false;
 
       // Send the packet to the player
@@ -233,8 +227,8 @@ class PlayerEntityRenderingTrait extends PlayerTrait {
     packet.headYaw = entity.rotation.headYaw;
     packet.bodyYaw = entity.rotation.yaw;
     packet.attributes = [];
-    packet.data = [...entity.metadata.values()];
-    packet.properties = entity.sharedProperties.getPropertySyncData();
+    packet.data = entity.metadata.getAllActorMetadataAsDataItems();
+    packet.properties = entity.sharedProperties.getSharedPropertiesAsSyncData();
     packet.links = [];
 
     // Check if the entity is riding another entity
@@ -288,7 +282,7 @@ class PlayerEntityRenderingTrait extends PlayerTrait {
 
     // Check if the current tick is divisible by 20
     // This is to ensure that the rendering is done every second
-    if (details.currentTick % 50n !== 0n) return;
+    if (details.currentTick % 20n !== 0n) return;
 
     // Check if the player has a chunk rendering component
     const component = this.player.getTrait(PlayerChunkRenderingTrait);
