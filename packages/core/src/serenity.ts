@@ -384,11 +384,15 @@ class Serenity extends Emitter<WorldEventSignals & ServerEvents> {
 
     // Disconnect all players
     for (const player of this.players.values()) {
-      // Get the default world from the serenity instance
-      const world = this.getWorld(); // Default world
+      // Write the player data to the default world provider
+      const defaultWorld = this.getWorld();
 
-      // Write the player's data to the storage
-      world.provider.writePlayer(player.uuid, player.getStorage());
+      // Set their player position so they spawn at the default world spawn.
+      const storage = player.getStorage();
+      storage.setPosition(defaultWorld.getDimension().spawnPosition);
+
+      // Save the player's data to the default dimension.
+      defaultWorld.provider.writePlayer(player.uuid, storage);
 
       // Disconnect the player from the server
       player.disconnect(
