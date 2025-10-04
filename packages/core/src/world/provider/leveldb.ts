@@ -884,7 +884,15 @@ class LevelDBProvider extends WorldProvider {
       mkdirSync(resolve(worldPath, "structures"));
 
     // Create a new world instance.
-    const world = new World(serenity, new this(worldPath), properties);
+    let world: World | null = null;
+    try {
+      world = new World(serenity, new this(worldPath), properties);
+    } catch (e) {
+      serenity.logger.error("Failed to load world", worldId, e)
+      return;
+    }
+
+    if (!world) return;
 
     // Create a new WorldInitializedSignal instance.
     new WorldInitializeSignal(world).emit();
