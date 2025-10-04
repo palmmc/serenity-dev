@@ -880,7 +880,17 @@ class LevelDBProvider extends WorldProvider {
       );
 
     // Create a new world instance.
-    const world = new World(serenity, new this(path), worldProperties);
+    let world: World | null = null;
+    try {
+      world = new World(serenity, new this(path), worldProperties);
+    } catch (e) {
+      serenity.logger.error("Failed to load world", worldProperties.identifier, e)
+      //@ts-ignore
+      return;
+    }
+
+    //@ts-ignore
+    if (!world) return;
 
     // Create a new WorldInitializedSignal instance.
     new WorldInitializeSignal(world).emit();
