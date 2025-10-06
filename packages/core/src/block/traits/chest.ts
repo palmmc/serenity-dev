@@ -158,6 +158,7 @@ class BlockChestTrait extends BlockInventoryTrait {
     }
   }
 
+  //@ts-ignore
   public onInteract({ cancel, origin }: BlockInteractionOptions): void {
     if (cancel || !origin) return;
 
