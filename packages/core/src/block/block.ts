@@ -971,7 +971,7 @@ class Block {
       // As the trait does not implement the method
       if (success === undefined) continue;
 
-      // If the result is false, cancel the break
+      // If the result is false, cancel the interaction
       options.cancel = !success;
     }
 
