@@ -2,13 +2,13 @@ import {
   ActorDamageCause,
   AttributeName,
   Difficulty,
+  EffectType,
   Gamemode
 } from "@serenityjs/protocol";
 
 import { EntityIdentifier } from "../../../enums";
 import { EntityAttributeTrait, EntityHealthTrait } from "../attribute";
 import { Player } from "../../player";
-import { EntitySpawnOptions } from "../../..";
 
 class PlayerHungerTrait extends EntityAttributeTrait {
   public static readonly identifier = "hunger";
@@ -78,16 +78,23 @@ class PlayerHungerTrait extends EntityAttributeTrait {
     const currentTick = this.player.world.currentTick;
 
     // Check if the player is not exhausted and the current tick is divisible by 30
-    if (!health) return;
-    if (this.currentValue > 17 && currentTick % 30n === 0n) {
-      // Check if the health is less than the maximum value
-      if (health.currentValue < 20) {
-        // Increase the health value
-        health.currentValue++;
+    if (!health) {
+      // Prevent the player from breaking blocks if they are starving on their island.
+      if (this.currentValue === 0 && currentTick % 120n === 0n) {
+        if (this.player.hasEffect(EffectType.MiningFatigue)) this.player.removeEffect(EffectType.MiningFatigue);
+        this.player.addEffect(EffectType.MiningFatigue, 200, { amplifier: 2, showParticles: false });
       }
-    } else if (this.currentValue === 0 && currentTick % 30n === 0n) {
-      // Apply damage to the player
-      health.applyDamage(1, this.player, ActorDamageCause.Starve);
+    } else {
+      if (this.currentValue > 17 && currentTick % 30n === 0n) {
+        // Check if the health is less than the maximum value
+        if (health.currentValue < 20) {
+          // Increase the health value
+          health.currentValue++;
+        }
+      } else if (this.currentValue === 0 && currentTick % 30n === 0n) {
+        // Apply damage to the player
+        health.applyDamage(1, this.player, ActorDamageCause.Starve);
+      }
     }
   }
 

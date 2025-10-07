@@ -1001,7 +1001,7 @@ class Block {
 
       // Handle exhaustion.
       const hunger = options.origin.getTrait(PlayerHungerTrait)
-      if (hunger) hunger.exhaustion += 0.05;
+      if (hunger) hunger.exhaustion += 0.025;
 
       // Emit the signal to the server
       options.cancel = !signal.emit();
