@@ -272,14 +272,13 @@ class InventoryTransactionHandler extends NetworkHandler {
             // Increment the stack count
             return stack.incrementStack();
           }
-          // Check if the player is in survival mode
-          // If so, decrement the stack
-          else if (player.getGamemode() === Gamemode.Survival)
-            stack.decrementStack();
 
           // Check if the block type exists and is not air
-          if (useOptions.placingBlock.identifier === BlockIdentifier.Air)
+          if (useOptions.placingBlock.identifier === BlockIdentifier.Air) {
+            if (player.getGamemode() === Gamemode.Survival)
+              stack.decrementStack();
             return; // If so, we skip the block placement
+          }
 
           // Get the permutation to set the block state
           const permutation =
@@ -347,12 +346,13 @@ class InventoryTransactionHandler extends NetworkHandler {
 
           // Check if the block placement was canceled, revert the block
           if (options.cancel) {
-            // Increment the item stack
-            stack.incrementStack();
-
             // Revert the block to its previous state
             return resultant.setPermutation(previousPermutation);
-          } else return resultant.dimension.broadcast(sound); // If not, broadcast the sound
+          } else {
+            if (player.getGamemode() === Gamemode.Survival)
+              stack.decrementStack();
+            return resultant.dimension.broadcast(sound); // If not, broadcast the sound
+          }
         }
       }
 
