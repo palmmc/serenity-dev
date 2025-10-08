@@ -348,11 +348,10 @@ class InventoryTransactionHandler extends NetworkHandler {
           if (options.cancel) {
             // Revert the block to its previous state
             return resultant.setPermutation(previousPermutation);
-          } else {
-            if (player.getGamemode() === Gamemode.Survival)
-              stack.decrementStack();
-            return resultant.dimension.broadcast(sound); // If not, broadcast the sound
           }
+          if (player.getGamemode() === Gamemode.Survival)
+            stack.decrementStack();
+          return resultant.dimension.broadcast(sound); // If not, broadcast the sound
         }
       }
 
