@@ -82,7 +82,7 @@ class PlayerHungerTrait extends EntityAttributeTrait {
       // Prevent the player from breaking blocks if they are starving on their island.
       if (this.currentValue === 0 && currentTick % 120n === 0n) {
         if (this.player.hasEffect(EffectType.MiningFatigue)) this.player.removeEffect(EffectType.MiningFatigue);
-        this.player.addEffect(EffectType.MiningFatigue, 200, { amplifier: 2, showParticles: false });
+        this.player.addEffect(EffectType.MiningFatigue, 10, { amplifier: 2, showParticles: false });
       }
     } else {
       if (this.currentValue > 17 && currentTick % 30n === 0n) {
