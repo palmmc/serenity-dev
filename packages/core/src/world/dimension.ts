@@ -107,6 +107,11 @@ class Dimension {
   public readonly blocks = new Map<bigint, Block>();
 
   /**
+   * Whether or not the dimension has been pre-generated.
+   */
+  public isLoaded = false;
+
+  /**
    * The amount of chunks that that will be rendered by the client.
    */
   public get viewDistance(): number {
