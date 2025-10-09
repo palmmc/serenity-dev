@@ -135,6 +135,8 @@ class LevelDBProvider extends WorldProvider {
         this.world.logger.info(
           `Successfully pre-generated §u${chunkCount}§r chunks for dimension §u${dimension.identifier}§r which contains §u${entityCount}§r entities and §u${blockCount}§r blocks.`
         );
+        // Set the dimension as loaded.
+        dimension.isLoaded = true;
       }
     };
 
