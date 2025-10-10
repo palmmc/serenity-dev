@@ -11279,7 +11279,7 @@
     "tags": ["minecraft:is_axe_item_destructible", "text_sign", "wood"],
     "air": false,
     "liquid": false,
-    "solid": true,
+    "solid": false,
     "states": ["facing_direction"]
   },
   {
