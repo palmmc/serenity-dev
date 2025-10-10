@@ -5974,7 +5974,7 @@
     "tags": ["minecraft:is_pickaxe_item_destructible"],
     "air": false,
     "liquid": false,
-    "solid": false,
+    "solid": true,
     "states": ["facing_direction", "toggle_bit"]
   },
   {
