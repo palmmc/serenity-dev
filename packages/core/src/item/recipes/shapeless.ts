@@ -33,17 +33,22 @@ class ShapelessCraftingRecipe extends Recipe {
           if (!type) continue;
 
           // Add the ingredient to the instance.
+          //@ts-ignore
           instance.addIngredient({ type, metadata });
+          //@ts-ignore
         } else if (ingredient.tag) {
           // Get the tag from the ingredient.
+          //@ts-ignore
           const tag = ingredient.tag as string;
 
           // Add the ingredient to the instance.
+          //@ts-ignore
           instance.addIngredient({ tag });
         }
       }
 
       // Set the pattern of the recipe.
+      //@ts-ignore
       instance.priority = recipe.priority ?? 0;
 
       // Add the resultants to the instance.
