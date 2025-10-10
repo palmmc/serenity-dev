@@ -295,7 +295,11 @@ class Dimension {
         }
       } else if (entity.isTicking) {
         // If the entity is not in simulation range, stop ticking it
-        entity.isTicking = false;
+        if (entity.hasTrait("persistence")) {
+          //@ts-ignore
+          entity.getTrait("persistence").despawn();
+        }
+        else entity.isTicking = false;
       }
     }
 
