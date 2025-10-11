@@ -11493,6 +11493,15 @@
     "states": ["liquid_depth"]
   },
   {
+    "identifier": "minecraft:stonecutter",
+    "components": [],
+    "tags": ["minecraft:is_pickaxe_item_destructible"],
+    "air": false,
+    "liquid": false,
+    "solid": true,
+    "states": []
+  },
+  {
     "identifier": "minecraft:waterlily",
     "components": [],
     "tags": [],
