@@ -56,7 +56,7 @@ class LevelDBProvider extends WorldProvider {
     this.db = Leveldb.open(resolve(path, "db"));
   }
 
-  public onShutdown(): void {
+  public async onShutdown(): Promise<void> {
     // Save the world properties to the world directory.
     // First we need to get all the dimension properties.
     const dimensions: Array<DimensionProperties> = [];
@@ -90,6 +90,9 @@ class LevelDBProvider extends WorldProvider {
 
     // Save all the world data.
     this.onSave();
+
+    // Convert all chunk data to file system format.
+    //await this.saveAsFileSystem();
 
     // Close the database connection.
     this.db.close();
@@ -941,6 +944,129 @@ class LevelDBProvider extends WorldProvider {
 
     // Return the created world.
     return world;
+  }
+
+  public async saveAsFileSystem(distance: number = 64): Promise<void> {
+    for (const [, dimension] of this.world.dimensions) {
+      // Check the chunk directory exists.
+      mkdirSync(resolve(this.path, "dimensions", dimension.identifier, "chunks"), { recursive: true });
+
+      // Get the spawn position of the dimension.
+      const sx = dimension.properties.spawnPosition[0] >> 4;
+      const sz = dimension.properties.spawnPosition[2] >> 4;
+
+      // Iterate through the chunks to pregenerate.
+      for (let x = sx - distance; x <= sx + distance; x++) {
+        for (let z = sz - distance; z <= sz + distance; z++) {
+          // Read the chunk from the filesystem.
+          const chunk = await this.parseChunk(new Chunk(x, z, dimension.type), dimension);
+
+          console.log("Processing chunk", x, z);
+
+          // Check if the chunk is empty.
+          if (!chunk || chunk.isEmpty()) continue;
+
+          // Get the path for the chunk file.
+          const path = resolve(
+            this.path,
+            "dimensions",
+            dimension.identifier,
+            "chunks",
+            `${chunk.x}.${chunk.z}.dat`
+          );
+
+          // Serialize the chunk data to a buffer.
+          const buffer = Chunk.serialize(chunk);
+
+          // Write the chunk data to the file.
+          writeFileSync(path, buffer);
+
+          console.log("Wrote chunk", chunk.x, chunk.z, "to", path);
+        }
+      }
+    }
+  }
+
+  public async parseChunk(chunk: Chunk, dimension: Dimension): Promise<Chunk | null> {
+    // Check if the leveldb contains the chunk.
+    if (this.hasChunk(chunk.x, chunk.z, dimension)) {
+      // Iterate through the subchunks of the chunk.
+      for (let i = 0; i < Chunk.MAX_SUB_CHUNKS; i++) {
+        // Prepare an offset variable.
+        // This is used to adjust the index for overworld dimensions.
+        let offset = 0;
+
+        // Check if the dimension type is overworld.
+        if (chunk.type === DimensionType.Overworld) offset = 4; // Adjust index for overworld
+
+        // Calculate the subchunk Y coordinate.
+        const cy = i - offset;
+
+        // Attempt to read the subchunk from the database.
+        try {
+          // Read the subchunk from the database.
+          const subchunk = this.readSubChunk(chunk.x, cy, chunk.z, dimension);
+
+          // Check if the subchunk is empty.
+          if (subchunk.isEmpty()) continue;
+
+          // Push the subchunk to the chunk.
+          chunk.subchunks[i] = subchunk;
+        } catch {
+          // We can ignore any error that occurs while reading the subchunk.
+          continue;
+        }
+      }
+
+      // Read the biomes from the chunk.
+      const biomes = this.readChunkBiomes(chunk, dimension);
+
+      // Iterate through the biomes and add them to the chunk.
+      for (let i = 0; i < biomes.length; i++) {
+        // Get the corresponding subchunk and biome.
+        const subchunk = chunk.subchunks[i];
+        const biome = biomes[i];
+
+        // Check if the subchunk and biome exist.
+        if (!subchunk || !biome) continue;
+
+        // Set the biome storage of the subchunk.
+        subchunk.biomes = biome;
+      }
+
+      // Read the entities from the database.
+      const entities = this.readChunkEntities(chunk, dimension);
+
+      // Check if there are any entities in the chunk.
+      if (entities.length > 0) {
+        // Iterate through the entities and add them to the chunk.
+        for (const storage of entities) {
+          // Get the unique id of the entity.
+          const uniqueId = storage.get<LongTag>("UniqueID");
+
+          // Skip if the unique id does not exist.
+          if (!uniqueId) continue;
+
+          // Set the entity storage in the chunk.
+          chunk.setEntityStorage(BigInt(uniqueId.valueOf()), storage, false);
+        }
+      }
+
+      // Read the blocks from the chunk.
+      const blocks = this.readChunkBlocks(chunk, dimension);
+
+      // Check if there are any blocks in the chunk.
+      if (blocks.length > 0) {
+        // Iterate through the blocks and add them to the chunk.
+        for (const storage of blocks) {
+          // Set the block storage in the chunk.
+          chunk.setBlockStorage(storage.getPosition(), storage, false);
+        }
+      }
+
+      // Return the chunk.
+      return chunk;
+    } else return null;
   }
 }
 
