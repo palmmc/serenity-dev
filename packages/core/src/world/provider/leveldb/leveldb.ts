@@ -3,6 +3,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync
 } from "node:fs";
 import { resolve } from "node:path";
@@ -10,7 +11,7 @@ import { resolve } from "node:path";
 import { BinaryStream, Endianness } from "@serenityjs/binarystream";
 import { Leveldb } from "@serenityjs/leveldb";
 import { DimensionType } from "@serenityjs/protocol";
-import { ByteTag, CompoundTag, LongTag } from "@serenityjs/nbt";
+import { ByteTag, CompoundTag, ListTag, LongTag } from "@serenityjs/nbt";
 
 import { BiomeStorage, Chunk, SubChunk } from "../../chunk";
 import { Dimension } from "../../dimension";
@@ -92,7 +93,7 @@ class LevelDBProvider extends WorldProvider {
     this.onSave();
 
     // Convert all chunk data to file system format.
-    //await this.saveAsFileSystem();
+    await this.saveAsFileSystem();
 
     // Close the database connection.
     this.db.close();
@@ -948,8 +949,14 @@ class LevelDBProvider extends WorldProvider {
 
   public async saveAsFileSystem(distance: number = 64): Promise<void> {
     for (const [, dimension] of this.world.dimensions) {
+      const dimensionPath = resolve(this.path, "dimensions", dimension.identifier);
       // Check the chunk directory exists.
-      mkdirSync(resolve(this.path, "dimensions", dimension.identifier, "chunks"), { recursive: true });
+      mkdirSync(resolve(dimensionPath, "chunks"), { recursive: true });
+
+      // Check if the dimension directory contains a blocks directory.
+      if (!existsSync(resolve(dimensionPath, "blocks")))
+        // Create the blocks directory if it does not exist.
+        mkdirSync(resolve(dimensionPath, "blocks"));
 
       // Get the spawn position of the dimension.
       const sx = dimension.properties.spawnPosition[0] >> 4;
@@ -965,6 +972,14 @@ class LevelDBProvider extends WorldProvider {
 
           // Check if the chunk is empty.
           if (!chunk || chunk.isEmpty()) continue;
+
+          // Get the blocks that are in the chunk.
+          const blocks = chunk
+            .getAllBlockStorages()
+            .filter((storage) => storage.size > 0); // Filter out empty block storages.
+
+          // Write the block list to the database.
+          this.writeFileSystemBlocks(chunk, dimension, blocks);
 
           // Get the path for the chunk file.
           const path = resolve(
@@ -1067,6 +1082,46 @@ class LevelDBProvider extends WorldProvider {
       // Return the chunk.
       return chunk;
     } else return null;
+  }
+
+  public writeFileSystemBlocks(
+    chunk: Chunk,
+    dimension: Dimension,
+    blocks: Array<BlockLevelStorage>
+  ): void {
+    // Get the path for the chunk blocks file.
+    const blocksPath = resolve(
+      this.path,
+      "dimensions",
+      dimension.identifier,
+      "blocks",
+      `${chunk.x}.${chunk.z}.nbt`
+    );
+
+    // Check if there are no blocks to write.
+    if (blocks.length === 0 && !existsSync(blocksPath)) return;
+    else if (blocks.length === 0 && existsSync(blocksPath)) {
+      // Delete the blocks file if it exists and there are no blocks.
+      rmSync(blocksPath, { force: true });
+    } else {
+      // Create a new list tag for the blocks.
+      const list = new ListTag<CompoundTag>(blocks);
+
+      // Create a new binary stream to write the blocks.
+      const stream = new BinaryStream();
+
+      // Create a new compound tag to hold the blocks.
+      const root = new CompoundTag();
+
+      // Add the blocks list to the root compound tag.
+      root.set("blocks", list);
+
+      // Write the root compound tag to the stream.
+      CompoundTag.write(stream, root);
+
+      // Write the blocks to the file.
+      writeFileSync(blocksPath, stream.getBuffer());
+    }
   }
 }
 
