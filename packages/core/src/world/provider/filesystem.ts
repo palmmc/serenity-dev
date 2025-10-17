@@ -5,17 +5,17 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
-  writeFileSync
+  writeFileSync,
 } from "node:fs";
 
 import { BinaryStream } from "@serenityjs/binarystream";
-import { CompoundTag, ListTag, LongTag } from "@serenityjs/nbt";
+import { ByteTag, CompoundTag, ListTag, LongTag } from "@serenityjs/nbt";
 
 import { Serenity } from "../../serenity";
 import {
   WorldProviderProperties,
   WorldProperties,
-  DimensionProperties
+  DimensionProperties,
 } from "../../types";
 import { World } from "../world";
 import { WorldInitializeSignal } from "../../events";
@@ -85,6 +85,8 @@ class FileSystemProvider extends WorldProvider {
       this.world.logger.info(
         `Successfully pre-generated §u${chunkCount}§r chunks for dimension §u${dimension.identifier}§r which contains §u${entityCount}§r entities and §u${blockCount}§r blocks.`
       );
+      // Set the dimension as loaded.
+      dimension.isLoaded = true;
     }
   }
 
@@ -92,7 +94,7 @@ class FileSystemProvider extends WorldProvider {
     // Save the world properties to the world directory.
     // First we need to get all the dimension properties.
     const dimensions: Array<DimensionProperties> = [
-      ...this.world.dimensions.values()
+      ...this.world.dimensions.values(),
     ].map((dimension) => dimension.properties);
 
     // Get the world properties.
@@ -197,7 +199,7 @@ class FileSystemProvider extends WorldProvider {
         // Add the chunk to the dimension's chunk map.
         chunks.set(chunk.hash, chunk.insert(resultant));
 
-        // Populate the chunk with structures and other features.
+        // Call the populate method of the dimension generator.
         await dimension.generator.populate?.(chunk);
 
         // Return the chunk.
@@ -303,7 +305,12 @@ class FileSystemProvider extends WorldProvider {
     const root = CompoundTag.read(stream);
 
     // Read the entities from the stream.
-    const entities = [...root.get<ListTag<CompoundTag>>("entities")!.values()];
+    const entities = [
+      ...root
+        .get<ListTag<CompoundTag>>("entities")!
+        .values()
+        .filter((x) => !(x.get<ByteTag>("Persistent")?.valueOf() === 0)),
+    ];
 
     // Map the entities to EntityLevelStorage instances.
     return entities;
@@ -517,7 +524,7 @@ class FileSystemProvider extends WorldProvider {
 
       // Read all the structures in the world directory.
       const files = readdirSync(resolve(worldPath, "structures"), {
-        withFileTypes: true
+        withFileTypes: true,
       }).filter(
         // Filter only files that end with .mcstructure.
         (dirent) => dirent.isFile() && dirent.name.endsWith(".mcstructure")
@@ -646,56 +653,64 @@ class FileSystemProvider extends WorldProvider {
     return world;
   }
 
-  public static async loadFromExistingPath(
+  /**
+   * Loads a world from file into the serenity instance.
+   * @param serenity Serenity instance.
+   * @param worldId Identifier of the world.
+   * @returns
+   */
+  public static async loadWorld(
     serenity: Serenity,
-    path: string
-  ): Promise<World> {
-    // Resolve the path for the world directory.
-    path = resolve(path);
+    worldId: string
+  ): Promise<World | null> {
+    // Resolve the path for the worlds directory.
+    const path = resolve("./islands");
 
     // Check if the path provided exists.
-    // If it does not exist, throw an error.
-    if (!existsSync(path))
-      throw new Error(
-        `World directory at path ${path} does not exist, try creating it instead.`
-      );
+    // If it does not exist, create the directory.
+    if (!existsSync(path)) mkdirSync(path);
+
+    // Get the path for the world.
+    const worldPath = resolve(path, worldId);
 
     // Get the world properties.
-    let worldProperties: Partial<WorldProperties> = {};
-    if (existsSync(resolve(path, "properties.json"))) {
+    let properties: Partial<WorldProperties> = { identifier: worldId };
+    if (existsSync(resolve(worldPath, "properties.json"))) {
       // Read the properties of the world.
-      worldProperties = JSON.parse(
-        readFileSync(resolve(path, "properties.json"), "utf-8")
+      properties = JSON.parse(
+        readFileSync(resolve(worldPath, "properties.json"), "utf-8")
       );
     }
 
-    // Check if a world identifier was provided.
-    if (!worldProperties.identifier)
-      throw new Error(
-        `World at path ${path} does not have a valid identifier in its properties file.`
-      );
-
-    // Create a new world instance.
-    const world = new World(serenity, new this(path), worldProperties);
-
     // Check if the world directory contains a dimensions directory.
-    if (!existsSync(resolve(path, "dimensions")))
+    if (!existsSync(resolve(worldPath, "dimensions")))
       // Create the dimensions directory if it does not exist.
-      mkdirSync(resolve(path, "dimensions"));
+      mkdirSync(resolve(worldPath, "dimensions"));
 
     // Check if the world directory contains a players directory.
-    if (!existsSync(resolve(path, "players")))
+    if (!existsSync(resolve(worldPath, "players")))
       // Create the players directory if it does not exist.
-      mkdirSync(resolve(path, "players"));
+      mkdirSync(resolve(worldPath, "players"));
 
     // Check if the world directory contains a structures directory.
-    if (!existsSync(resolve(path, "structures")))
+    if (!existsSync(resolve(worldPath, "structures")))
       // Create the structures directory if it does not exist.
-      mkdirSync(resolve(path, "structures"));
+      mkdirSync(resolve(worldPath, "structures"));
+
+    // Create a new world instance.
+    let world: World | null = null;
+    try {
+      world = new World(serenity, new this(worldPath), properties);
+    } catch (e) {
+      serenity.logger.error("Failed to load world", worldId, e);
+      return null;
+    }
+
+    if (!world) return null;
 
     // Iterate through all the dimensions in the world directory.
     for (const [identifier] of world.dimensions) {
-      const dimensionPath = resolve(path, "dimensions", identifier);
+      const dimensionPath = resolve(worldPath, "dimensions", identifier);
 
       // Check if the dimension directory exists.
       if (!existsSync(dimensionPath))
@@ -716,89 +731,58 @@ class FileSystemProvider extends WorldProvider {
       if (!existsSync(resolve(dimensionPath, "blocks")))
         // Create the blocks directory if it does not exist.
         mkdirSync(resolve(dimensionPath, "blocks"));
-    }
-    // Create a new WorldInitializedSignal instance.
-    new WorldInitializeSignal(world).emit();
 
-    // Return the created world instance.
-    return world;
-  }
+      // Create a new WorldInitializedSignal instance.
+      new WorldInitializeSignal(world).emit();
 
-  public static async createFromGivenPath(
-    serenity: Serenity,
-    path: string,
-    worldProperties?: Partial<WorldProperties>
-  ): Promise<World> {
-    // Resolve the path for the world directory.
-    path = resolve(path);
-
-    // Check if the path provided exists.
-    // If it does exist, throw an error.
-    if (existsSync(path))
-      throw new Error(
-        `World directory at path ${path} already exists, try loading it instead.`
+      // Write the properties to the world.
+      writeFileSync(
+        resolve(worldPath, "properties.json"),
+        JSON.stringify(world.properties, null, 2)
       );
 
-    // Check if a world identifier was provided.
-    if (!worldProperties?.identifier)
-      throw new Error("A world identifier is required to create a new world.");
+      // Read all the structures in the world directory.
+      const files = readdirSync(resolve(worldPath, "structures"), {
+        withFileTypes: true,
+      }).filter(
+        // Filter only files that end with .mcstructure.
+        (dirent) => dirent.isFile() && dirent.name.endsWith(".mcstructure")
+      );
 
-    // Create the world directory.
-    mkdirSync(path, { recursive: true });
+      // Attempt to read the structures from the world directory.
+      for (const file of files) {
+        try {
+          // Create the structure from the file.
+          const path = resolve(worldPath, "structures", file.name);
 
-    // Create a new world instance.
-    const world = new World(serenity, new this(path), worldProperties);
+          // Read the structure file.
+          const stream = new BinaryStream(readFileSync(path));
 
-    // Check if the world directory contains a dimensions directory.
-    if (!existsSync(resolve(path, "dimensions")))
-      // Create the dimensions directory if it does not exist.
-      mkdirSync(resolve(path, "dimensions"));
+          // Create a new structure instance from the file.
+          const structure = Structure.from(world, CompoundTag.read(stream));
 
-    // Check if the world directory contains a players directory.
-    if (!existsSync(resolve(path, "players")))
-      // Create the players directory if it does not exist.
-      mkdirSync(resolve(path, "players"));
+          // Parse the identifier from the file name.
+          const identifier = file.name.replace(/\.mcstructure$/, "");
 
-    // Check if the world directory contains a structures directory.
-    if (!existsSync(resolve(path, "structures")))
-      // Create the structures directory if it does not exist.
-      mkdirSync(resolve(path, "structures"));
+          // Add the structure to the world.
+          world.structures.set(identifier, structure);
 
-    // Iterate through all the dimensions in the world directory.
-    for (const [identifier] of world.dimensions) {
-      const dimensionPath = resolve(path, "dimensions", identifier);
-
-      // Check if the dimension directory exists.
-      if (!existsSync(dimensionPath))
-        // Create the dimension directory if it does not exist.
-        mkdirSync(dimensionPath);
-
-      // Check if the dimension directory contains a chunks directory.
-      if (!existsSync(resolve(dimensionPath, "chunks")))
-        // Create the chunks directory if it does not exist.
-        mkdirSync(resolve(dimensionPath, "chunks"));
-
-      // Check if the dimension directory contains an entities directory.
-      if (!existsSync(resolve(dimensionPath, "entities")))
-        // Create the entities directory if it does not exist.
-        mkdirSync(resolve(dimensionPath, "entities"));
-
-      // Check if the dimension directory contains a blocks directory.
-      if (!existsSync(resolve(dimensionPath, "blocks")))
-        // Create the blocks directory if it does not exist.
-        mkdirSync(resolve(dimensionPath, "blocks"));
+          // Log a debug message indicating the structure was loaded.
+          world.logger.debug(
+            `Loaded structure "${identifier}" from file "${file.name}" for world "${world.properties.identifier}."`
+          );
+        } catch (reason) {
+          // Log the error if the structure failed to load.
+          world.logger.error(
+            `Failed to load structure from file ${file.name} for world ${world.properties.identifier}. Reason:`,
+            reason
+          );
+        }
+      }
     }
 
-    // Create a new WorldInitializedSignal instance.
-    new WorldInitializeSignal(world).emit();
-
-    // Create the properties file for the world.
-    writeFileSync(
-      resolve(path, "properties.json"),
-      JSON.stringify(world.properties, null, 2)
-    );
-
-    // Return the created world.
+    // Register the world with the serenity instance.
+    serenity.registerWorld(world);
     return world;
   }
 }

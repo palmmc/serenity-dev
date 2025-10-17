@@ -231,7 +231,6 @@ class LevelDBProvider extends WorldProvider {
       if (entities.length > 0) {
         // Iterate through the entities and add them to the chunk.
         for (const storage of entities) {
-          if (storage.get<ByteTag>("Persistent")?.valueOf() === 0) continue;
           // Get the unique id of the entity.
           const uniqueId = storage.get<LongTag>("UniqueID");
 
@@ -489,6 +488,9 @@ class LevelDBProvider extends WorldProvider {
         // Read the player data from the stream.
         const storage = CompoundTag.read(storageStream);
 
+        // Skip if entity is not persistent.
+        if (storage.get<ByteTag>("Persistent")?.valueOf() === 0) continue;
+
         // Push the entity storage to the array.
         entities.push(storage);
       } while (!stream.feof());
@@ -731,7 +733,6 @@ class LevelDBProvider extends WorldProvider {
 
     // Iterate over the world entries in the directory.
     for (const directory of directories) {
-      if (directory.name.startsWith("sb_")) continue;
       // Get the path for the world.
       const worldPath = resolve(path, directory.name);
 
