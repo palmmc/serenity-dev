@@ -51,43 +51,52 @@ class FileSystemProvider extends WorldProvider {
   }
 
   public onStartup(): void {
-    // Pregenerate the dimensions for the world.
-    for (const [, dimension] of this.world.dimensions) {
-      // Get the spawn position of the dimension.
-      const sx = dimension.properties.spawnPosition[0] >> 4;
-      const sz = dimension.properties.spawnPosition[2] >> 4;
+    // Schedule the world to be ready after 20 ticks.
+    const schedule = this.world.schedule(20);
 
-      // Get the view distance of the dimension.
-      const viewDistance = dimension.viewDistance;
+    // Create a new method to hold the pregeneration logic.
+    const pregenerate = () => {
+      // Pregenerate the dimensions for the world.
+      for (const [, dimension] of this.world.dimensions) {
+        // Get the spawn position of the dimension.
+        const sx = dimension.properties.spawnPosition[0] >> 4;
+        const sz = dimension.properties.spawnPosition[2] >> 4;
 
-      // Prepare the amount of chunks to pregenerate.
-      let chunkCount: number = 0;
+        // Get the view distance of the dimension.
+        const viewDistance = dimension.viewDistance;
 
-      // Iterate through the chunks to pregenerate.
-      for (let x = sx - viewDistance; x <= sx + viewDistance; x++) {
-        for (let z = sz - viewDistance; z <= sz + viewDistance; z++) {
-          // Create a new chunk instance.
-          const chunk = new Chunk(x, z, dimension.type);
+        // Prepare the amount of chunks to pregenerate.
+        let chunkCount: number = 0;
 
-          // Read the chunk from the filesystem.
-          this.readChunk(chunk, dimension);
+        // Iterate through the chunks to pregenerate.
+        for (let x = sx - viewDistance; x <= sx + viewDistance; x++) {
+          for (let z = sz - viewDistance; z <= sz + viewDistance; z++) {
+            // Create a new chunk instance.
+            const chunk = new Chunk(x, z, dimension.type);
 
-          // Increment the count of pregenerated chunks.
-          chunkCount++;
+            // Read the chunk from the filesystem.
+            this.readChunk(chunk, dimension);
+
+            // Increment the count of pregenerated chunks.
+            chunkCount++;
+          }
         }
+
+        // Get the amount of entities and blocks in the dimension.
+        const entityCount = dimension.entities.size;
+        const blockCount = dimension.blocks.size;
+
+        // Log the amount of chunks to pregenerate.
+        this.world.logger.info(
+          `Successfully pre-generated §u${chunkCount}§r chunks for dimension §u${dimension.identifier}§r which contains §u${entityCount}§r entities and §u${blockCount}§r blocks.`
+        );
+        // Set the dimension as loaded.
+        dimension.isLoaded = true;
       }
+    };
 
-      // Get the amount of entities and blocks in the dimension.
-      const entityCount = dimension.entities.size;
-      const blockCount = dimension.blocks.size;
-
-      // Log the amount of chunks to pregenerate.
-      this.world.logger.info(
-        `Successfully pre-generated §u${chunkCount}§r chunks for dimension §u${dimension.identifier}§r which contains §u${entityCount}§r entities and §u${blockCount}§r blocks.`
-      );
-      // Set the dimension as loaded.
-      dimension.isLoaded = true;
-    }
+    // Call the pregenerate method immediately.
+    schedule.on(pregenerate);
   }
 
   public onShutdown(): void {
@@ -102,7 +111,7 @@ class FileSystemProvider extends WorldProvider {
     properties.dimensions = dimensions.map((dim) => {
       return {
         ...dim,
-        generator: "void"
+        generator: "void",
       };
     });
 
@@ -310,12 +319,7 @@ class FileSystemProvider extends WorldProvider {
     const root = CompoundTag.read(stream);
 
     // Read the entities from the stream.
-    const entities = [
-      ...root
-        .get<ListTag<CompoundTag>>("entities")!
-        .values()
-        .filter((x) => !(x.get<ByteTag>("Persistent")?.valueOf() === 0)),
-    ];
+    const entities = [...root.get<ListTag<CompoundTag>>("entities")!.values()];
 
     // Map the entities to EntityLevelStorage instances.
     return entities;
@@ -333,6 +337,11 @@ class FileSystemProvider extends WorldProvider {
       dimension.identifier,
       "entities",
       `${chunk.x}.${chunk.z}.nbt`
+    );
+
+    // Filter out non-persistent entities.
+    entities = entities.filter(
+      ([, tag]) => tag.get<ByteTag>("Persistent")?.valueOf() !== 0
     );
 
     // Check if there are no entities to write.
@@ -694,16 +703,6 @@ class FileSystemProvider extends WorldProvider {
       // Create the dimensions directory if it does not exist.
       mkdirSync(resolve(worldPath, "dimensions"));
 
-    // Check if the world directory contains a players directory.
-    if (!existsSync(resolve(worldPath, "players")))
-      // Create the players directory if it does not exist.
-      mkdirSync(resolve(worldPath, "players"));
-
-    // Check if the world directory contains a structures directory.
-    if (!existsSync(resolve(worldPath, "structures")))
-      // Create the structures directory if it does not exist.
-      mkdirSync(resolve(worldPath, "structures"));
-
     // Create a new world instance.
     let world: World | null = null;
     try {
@@ -714,6 +713,12 @@ class FileSystemProvider extends WorldProvider {
     }
 
     if (!world) return null;
+
+    if (world.identifier === "default")
+      if (!existsSync(resolve(worldPath, "players")))
+        // Check if the world directory contains a players directory.
+        // Create the players directory if it does not exist.
+        mkdirSync(resolve(worldPath, "players"));
 
     // Iterate through all the dimensions in the world directory.
     for (const [identifier] of world.dimensions) {
@@ -738,55 +743,16 @@ class FileSystemProvider extends WorldProvider {
       if (!existsSync(resolve(dimensionPath, "blocks")))
         // Create the blocks directory if it does not exist.
         mkdirSync(resolve(dimensionPath, "blocks"));
-
-      // Create a new WorldInitializedSignal instance.
-      new WorldInitializeSignal(world).emit();
-
-      // Write the properties to the world.
-      writeFileSync(
-        resolve(worldPath, "properties.json"),
-        JSON.stringify(world.properties, null, 2)
-      );
-
-      // Read all the structures in the world directory.
-      const files = readdirSync(resolve(worldPath, "structures"), {
-        withFileTypes: true,
-      }).filter(
-        // Filter only files that end with .mcstructure.
-        (dirent) => dirent.isFile() && dirent.name.endsWith(".mcstructure")
-      );
-
-      // Attempt to read the structures from the world directory.
-      for (const file of files) {
-        try {
-          // Create the structure from the file.
-          const path = resolve(worldPath, "structures", file.name);
-
-          // Read the structure file.
-          const stream = new BinaryStream(readFileSync(path));
-
-          // Create a new structure instance from the file.
-          const structure = Structure.from(world, CompoundTag.read(stream));
-
-          // Parse the identifier from the file name.
-          const identifier = file.name.replace(/\.mcstructure$/, "");
-
-          // Add the structure to the world.
-          world.structures.set(identifier, structure);
-
-          // Log a debug message indicating the structure was loaded.
-          world.logger.debug(
-            `Loaded structure "${identifier}" from file "${file.name}" for world "${world.properties.identifier}."`
-          );
-        } catch (reason) {
-          // Log the error if the structure failed to load.
-          world.logger.error(
-            `Failed to load structure from file ${file.name} for world ${world.properties.identifier}. Reason:`,
-            reason
-          );
-        }
-      }
     }
+
+    // Create a new WorldInitializedSignal instance.
+    new WorldInitializeSignal(world).emit();
+
+    // Write the properties to the world.
+    writeFileSync(
+      resolve(worldPath, "properties.json"),
+      JSON.stringify(world.properties, null, 2)
+    );
 
     // Register the world with the serenity instance.
     serenity.registerWorld(world);
