@@ -13,7 +13,7 @@ import {
   UpdateAttributesPacket,
   Vector3f
 } from "@serenityjs/protocol";
-import { BaseTag, CompoundTag } from "@serenityjs/nbt";
+import { BaseTag, ListTag, StringTag } from "@serenityjs/nbt";
 
 import { Dimension, World } from "../world";
 import {
@@ -76,6 +76,11 @@ class Entity {
    * The serenity instance of the server
    */
   protected readonly serenity: Serenity;
+
+  /**
+   * The storage of the entity. This is used to persist data about the entity between server restarts.
+   */
+  protected readonly storage: EntityLevelStorage;
 
   /**
    * The type of the entity.
@@ -145,16 +150,6 @@ class Entity {
    * These values are derived from the components and traits of the entity
    */
   public readonly attributes: EntityAttributes;
-
-  /**
-   *
-   */
-  protected readonly storage: EntityLevelStorage;
-
-  /**
-   * The tags that are attached to the entity
-   */
-  public readonly tags = new Set<string>();
 
   /**
    * The input info of the entity
@@ -325,10 +320,10 @@ class Entity {
     }
 
     // Create the maps for the entity
-    this.sharedProperties = new EntitySharedProperties(this);
     this.metadata = new EntityActorMetadata(this);
     this.flags = new EntityActorFlags(this);
     this.attributes = new EntityAttributes(this);
+    this.sharedProperties = new EntitySharedProperties(this);
 
     // Iterate over the traits in the storage and add them to the entity
     for (const identifier of this.storage.getTraits()) {
@@ -360,83 +355,6 @@ class Entity {
 
     // Add the traits of the block type to the entity
     for (const [, trait] of this.type.traits) this.addTrait(trait);
-  }
-
-  // --- DEPRECATED - REMOVE IN FUTURE ---
-
-  /**
-   * The NBT data of the entity.
-   * @deprecated Use `getStorageEntry` and `setStorageEntry` methods instead.
-   * Will be removed in version 0.8.14 and above.
-   */
-  public get nbt(): CompoundTag {
-    // Log a warning that the nbt property is deprecated
-    this.world.logger.warn(
-      `The 'Entity.nbt' property is deprecated and will be removed in a future version. Please use 'Entity.getStorageEntry' and 'Entity.setStorageEntry' methods instead.`
-    );
-
-    // Return the storage of the entity
-    return this.storage;
-  }
-
-  /**
-   * The name tag of the entity.
-   * @deprecated Use `getNametag` and `setNametag` methods instead.
-   * Will be removed in version 0.8.14 and above.
-   */
-  public get nameTag(): string {
-    // Log a warning that the nameTag property is deprecated
-    this.world.logger.warn(
-      `The 'Entity.nameTag' property is deprecated and will be removed in a future version. Please use 'Entity.getNametag' and 'Entity.setNametag' methods instead.`
-    );
-
-    // Return the nametag of the entity
-    return this.getNametag();
-  }
-
-  /**
-   * The name tag of the entity.
-   * @deprecated Use `getNametag` and `setNametag` methods instead.
-   * Will be removed in version 0.8.14 and above.
-   */
-  public set nameTag(value: string) {
-    // Log a warning that the nameTag property is deprecated
-    this.world.logger.warn(
-      `The 'Entity.nameTag' property is deprecated and will be removed in a future version. Please use 'Entity.getNametag' and 'Entity.setNametag' methods instead.`
-    );
-
-    // Set the nametag of the entity
-    this.setNametag(value);
-  }
-
-  /**
-   * Whether the entity name tag is always visible.
-   * @deprecated Use `getNametagAlwaysVisible` and `setNametagAlwaysVisible` methods instead.
-   * Will be removed in version 0.8.14 and above.
-   */
-  public get alwaysShowNameTag(): boolean {
-    // Log a warning that the alwaysShowNameTag property is deprecated
-    this.world.logger.warn(
-      `The 'Entity.alwaysShowNameTag' property is deprecated and will be removed in a future version. Please use 'Entity.getNametagAlwaysVisible' and 'Entity.setNametagAlwaysVisible' methods instead.`
-    );
-
-    // Return the nametag visibility of the entity
-    return this.getNametagAlwaysVisible();
-  }
-
-  /**
-   * Whether the entity name tag is always visible.
-   * @deprecated Use `getNametagAlwaysVisible` and `setNametagAlwaysVisible` methods instead.
-   * Will be removed in version 0.8.14 and above.
-   */
-  public set alwaysShowNameTag(value: boolean) {
-    // Log a warning that the alwaysShowNameTag property is deprecated
-    this.world.logger.warn(
-      `The 'Entity.alwaysShowNameTag' property is deprecated and will be removed in a future version. Please use 'Entity.getNametagAlwaysVisible' and 'Entity.setNametagAlwaysVisible' methods instead.`
-    );
-
-    // Set the nametag visibility of the entity
-    this.setNametagAlwaysVisible(value);
   }
 
   /**
@@ -1537,20 +1455,33 @@ class Entity {
   }
 
   /**
+   * Gets the tags of the entity.
+   * @returns The tags of the entity.
+   */
+  public getTags(): Array<string> {
+    // Get the tags entry from the storage
+    const entry = this.getStorageEntry<ListTag<StringTag>>("Tags");
+
+    // Return the tags as an array
+    if (!entry) return [];
+
+    // Push the tags to an array
+    const tags: Array<string> = [];
+
+    // Push the tags to the array
+    for (const tag of entry.values()) tags.push(tag.valueOf());
+
+    // Return the tags
+    return tags;
+  }
+
+  /**
    * Whether or not the entity has a tag.
    * @param tag The tag to check.
    * @returns Whether or not the entity has the tag.
    */
   public hasTag(tag: string): boolean {
-    return this.tags.has(tag);
-  }
-
-  /**
-   * Gets the tags of the entity.
-   * @returns The tags of the entity.
-   */
-  public getTags(): Array<string> {
-    return [...this.tags];
+    return this.getTags().includes(tag);
   }
 
   /**
@@ -1560,10 +1491,22 @@ class Entity {
    */
   public addTag(tag: string): boolean {
     // Check if the tag already exists
-    if (this.tags.has(tag)) return false;
+    if (this.hasTag(tag)) return false;
 
-    // Tags are read-only
-    this.tags.add(tag);
+    // Get the tags entry from the storage
+    let entry = this.getStorageEntry<ListTag<StringTag>>("Tags");
+
+    // Check if the entry exists, if not create it
+    if (!entry) {
+      // Create a new list tag entry with the tag
+      entry = new ListTag<StringTag>([new StringTag(tag)]);
+
+      // Set the name of the entry
+      this.setStorageEntry("Tags", entry);
+    } else {
+      // Add the tag to the entry
+      entry.push(new StringTag(tag));
+    }
 
     // Return true as the tag was added
     return true;
@@ -1576,10 +1519,22 @@ class Entity {
    */
   public removeTag(tag: string): boolean {
     // Check if the tag exists
-    if (!this.tags.has(tag)) return false;
+    if (!this.hasTag(tag)) return false;
 
-    // Remove the tag from the entity
-    this.tags.delete(tag);
+    // Get the tags entry from the storage
+    const entry = this.getStorageEntry<ListTag<StringTag>>("Tags");
+
+    // Check if the entry exists
+    if (!entry) return false;
+
+    // Find the index of the tag
+    const index = entry.findIndex((t) => t.valueOf() === tag);
+
+    // Check if the index is valid
+    if (index === -1) return false;
+
+    // Remove the tag from the entry
+    entry.splice(index, 1);
 
     // Return true as the tag was removed
     return true;
