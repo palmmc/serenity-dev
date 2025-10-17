@@ -99,7 +99,12 @@ class FileSystemProvider extends WorldProvider {
 
     // Get the world properties.
     const properties = this.world.properties;
-    properties.dimensions = dimensions;
+    properties.dimensions = dimensions.map((dim) => {
+      return {
+        ...dim,
+        generator: "void"
+      };
+    });
 
     // Write the properties to the world directory.
     writeFileSync(
@@ -453,6 +458,8 @@ class FileSystemProvider extends WorldProvider {
 
     // Iterate through all the directories in the world directory.
     for (const directory of directories) {
+      if (directory.name.startsWith("sb_")) continue;
+
       // Get the path for the world.
       const worldPath = resolve(path, directory.name);
 
