@@ -4,11 +4,17 @@ import {
   Difficulty,
   Gamemode,
   GameRule,
+  GameRules,
+  GameRulesChangedPacket,
+  GameRuleType,
+  LevelEvent,
+  LevelEventPacket,
   SetDefaultGamemodePacket,
   SetDifficultyPacket,
   SetTimePacket,
   TextPacket,
-  TextPacketType
+  TextPacketType,
+  Vector3f,
 } from "@serenityjs/protocol";
 import Emitter from "@serenityjs/emitter";
 
@@ -119,9 +125,18 @@ class World extends Emitter<WorldEventSignals> {
   }
 
   /**
-   * The current time of day for the world.
+   * The current day time of the world.
    */
-  public dayTime = 0;
+  public get dayTime(): number {
+    return this.properties.dayTime;
+  }
+
+  /**
+   * The current weather of the world.
+   */
+  public get weather(): "clear" | "rain" | "thunder" {
+    return this.properties.weather;
+  }
 
   public constructor(
     serenity: Serenity,
@@ -179,7 +194,7 @@ class World extends Emitter<WorldEventSignals> {
     // Increment the day time; day time is 24000 ticks long
     // Only increment if the day light cycle is enabled
     if (this.gamerules.doDayLightCycle)
-      this.dayTime = (this.dayTime + 1) % 24_000;
+      this.properties.dayTime = (this.properties.dayTime + 1) % 24_000;
 
     // Attempt to tick each dimension
     for (const [identifier, dimension] of this.dimensions) {
@@ -197,7 +212,7 @@ class World extends Emitter<WorldEventSignals> {
     if (this.currentTick % 500n === 0n) {
       // Create a new SetTimePacket
       const packet = new SetTimePacket();
-      packet.time = this.dayTime;
+      packet.time = this.properties.dayTime;
 
       // Broadcast the time packet to all players
       this.broadcast(packet);
@@ -396,21 +411,87 @@ class World extends Emitter<WorldEventSignals> {
   }
 
   /**
+   * Sets a gamerule value.
+   */
+  public setGamerule(gamerule: GameRule, value: boolean | number): void {
+    // Update the gamerule value
+    this.properties.gamerules[gamerule] = value;
+    // Update the gamerules for entities in the world
+    this.updateGamerules();
+  }
+
+  /**
+   * Updates gamerules for entities in the world.
+   */
+  public updateGamerules(): void {
+    // Create a new GamerulesChangedPacket.
+    const packet = new GameRulesChangedPacket();
+    packet.rules = Object.entries(this.properties.gamerules).map(
+      ([rule, val]) => (new GameRules(
+        true,
+        rule,
+        typeof val === "boolean"
+          ? GameRuleType.Bool
+          : GameRuleType.Int,
+        val
+      ))
+    );
+
+    // Broadcast the packet to all players
+    this.broadcast(packet);
+  }
+
+  /**
    * Sets the current time of day for the world.
    * @param time The time of day to set.
    */
   public setTimeOfDay(time: number | TimeOfDay): void {
     // Normalize the time to be between 0 and 24000
-    this.dayTime = time % 24000;
+    this.properties.dayTime = time % 24000;
 
     // Create a new SetTimePacket
     const packet = new SetTimePacket();
 
     // Assign the time to the packet
-    packet.time = this.dayTime;
+    packet.time = this.properties.dayTime;
 
     // Broadcast the packet to all players
     this.broadcast(packet);
+  }
+
+  /**
+   * Sets the current weather for the world.
+   * @param weather The weather to set.
+   */
+  public setWeather(weather: "clear" | "rain" | "thunder"): void {
+    const packets: LevelEventPacket[] = [
+      new LevelEventPacket(),
+      new LevelEventPacket()
+    ];
+
+    packets[0]!.event = LevelEvent.StopRaining;
+    packets[0]!.data = Math.floor(Math.random() * 20001) + 90000;
+    packets[0]!.position = new Vector3f(0, 0, 0);
+    packets[1]!.event = LevelEvent.StopThunderstorm;
+    packets[1]!.data = Math.floor(Math.random() * 10001) + 30000;
+    packets[1]!.position = new Vector3f(0, 0, 0);
+
+    this.properties.weather = weather;
+
+    switch (weather) {
+      case "rain": {
+        packets[0]!.event = LevelEvent.StartRaining;
+        break;
+      }
+      case "thunder": {
+        packets[0]!.event = LevelEvent.StartRaining;
+        packets[1]!.event = LevelEvent.StartThunderstorm;
+        break;
+      }
+    }
+
+    // Broadcast packets to all players in the world.
+    this.broadcast(...packets);
   }
 
   /**

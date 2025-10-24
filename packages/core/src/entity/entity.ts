@@ -7,9 +7,12 @@ import {
   ContainerId,
   ContainerName,
   EffectType,
+  LevelEvent,
+  LevelEventPacket,
   MoveActorDeltaPacket,
   MoveDeltaFlags,
   Rotation,
+  SetTimePacket,
   UpdateAttributesPacket,
   Vector3f
 } from "@serenityjs/protocol";
@@ -1287,7 +1290,50 @@ class Entity {
     this.position = position;
 
     // Check if a dimension was provided
-    if (dimension) this.changeDimension(dimension);
+    if (dimension) {
+      this.changeDimension(dimension);
+
+      // Send dimension data to player entities.
+      if (this.isPlayer()) {
+
+        // Create a new SetTimePacket
+        const timePacket = new SetTimePacket();
+
+        // Assign the time to the packet
+        timePacket.time = dimension.world.dayTime;
+
+        // Broadcast the packet.
+        this.send(timePacket);
+
+        // Create new LevelEventPacket
+        const packets: LevelEventPacket[] = [
+          new LevelEventPacket(),
+          new LevelEventPacket()
+        ];
+
+        packets[0]!.event = LevelEvent.StopRaining;
+        packets[0]!.data = Math.floor(Math.random() * 20001) + 90000;
+        packets[0]!.position = new Vector3f(0, 0, 0);
+        packets[1]!.event = LevelEvent.StopThunderstorm;
+        packets[1]!.data = Math.floor(Math.random() * 10001) + 30000;
+        packets[1]!.position = new Vector3f(0, 0, 0);
+
+        switch (dimension.world.weather) {
+          case "rain": {
+            packets[0]!.event = LevelEvent.StartRaining;
+            break;
+          }
+          case "thunder": {
+            packets[0]!.event = LevelEvent.StartRaining;
+            packets[1]!.event = LevelEvent.StartThunderstorm;
+            break;
+          }
+        }
+
+        // Broadcast the packet.
+        this.send(...packets);
+      }
+    }
 
     // Create a new MoveActorDeltaPacket
     const packet = new MoveActorDeltaPacket();

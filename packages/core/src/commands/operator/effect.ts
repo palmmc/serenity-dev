@@ -16,44 +16,6 @@ const register = (world: World) => {
       registry.overload(
         {
           target: TargetEnum,
-          effect: EffectEnum,
-          seconds: [IntegerEnum, true],
-          amplifier: [IntegerEnum, true],
-          hideParticles: [BooleanEnum, true]
-        },
-        (context) => {
-          // Get the target from the context
-          const targets = context.target.result;
-          const effect = context.effect.result;
-          const effectType = EffectType[effect as keyof typeof EffectType]
-          if (!targets) throw new Error("Invalid target.");
-          if (!effectType) throw new Error("Invalid effect.");
-          const seconds = context.seconds?.result ?? 5;
-          const amplifier = context.amplifier?.result ?? 0;
-          const showParticles = !(context.hideParticles?.result ?? false);
-
-          // Create an array to hold result messages.
-          const messages: string[] = [];
-
-          for (const target of targets) {
-            if (target.hasEffect(effectType)) {
-              target.removeEffect(effectType);
-            }
-            target.addEffect(effectType, seconds, { amplifier, showParticles });
-            messages.push(`§fGave ${effectType} * ${amplifier} to ${target.getNametag()} for ${seconds} seconds`);
-          }
-
-          // Return the message
-          return {
-            message: messages.join("\n")
-          };
-        }
-      );
-
-      // Create an overload for the command
-      registry.overload(
-        {
-          target: TargetEnum,
           clear: ClearEnum,
           effect: [EffectEnum, true],
         },
@@ -85,6 +47,44 @@ const register = (world: World) => {
               }
               messages.push(`§fTook all effects from ${target.getNametag()}`);
             }
+          }
+
+          // Return the message
+          return {
+            message: messages.join("\n")
+          };
+        }
+      );
+
+      // Create an overload for the command
+      registry.overload(
+        {
+          target: TargetEnum,
+          effect: EffectEnum,
+          seconds: [IntegerEnum, true],
+          amplifier: [IntegerEnum, true],
+          hideParticles: [BooleanEnum, true]
+        },
+        (context) => {
+          // Get the target from the context
+          const targets = context.target.result;
+          const effect = context.effect.result;
+          const effectType = EffectType[effect as keyof typeof EffectType]
+          if (!targets) throw new Error("Invalid target.");
+          if (!effectType) throw new Error("Invalid effect.");
+          const seconds = context.seconds?.result ?? 5;
+          const amplifier = context.amplifier?.result ?? 0;
+          const showParticles = !(context.hideParticles?.result ?? false);
+
+          // Create an array to hold result messages.
+          const messages: string[] = [];
+
+          for (const target of targets) {
+            if (target.hasEffect(effectType)) {
+              target.removeEffect(effectType);
+            }
+            target.addEffect(effectType, seconds, { amplifier, showParticles });
+            messages.push(`§fGave ${effectType} * ${amplifier} to ${target.getNametag()} for ${seconds} seconds`);
           }
 
           // Return the message

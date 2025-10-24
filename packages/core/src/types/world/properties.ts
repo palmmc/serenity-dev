@@ -37,6 +37,17 @@ interface WorldProperties {
    * The gamerules of the world.
    */
   gamerules: Partial<Record<GameRule, boolean | number>>;
+
+  /**
+   * The current day time of the world.
+   */
+  dayTime: number;
+
+  /**
+   * The current weather of the world.
+   */
+  weather: "clear" | "rain" | "thunder";
+
 }
 
 export { WorldProperties };
