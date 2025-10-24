@@ -30,7 +30,9 @@ const DefaultWorldProperties: WorldProperties = {
     drowningDamage: true,
     randomTickSpeed: 1,
     locatorBar: false
-  }
+  },
+  dayTime: 0,
+  weather: "clear"
 };
 
 export { DefaultWorldProperties };

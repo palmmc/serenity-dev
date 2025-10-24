@@ -47,7 +47,6 @@ const OperatorCommands = [
   OP,
   DEOP,
   SAVE,
-  TIME,
   ENTITYTRAITS,
   SPAWNPOINT,
   ENCHANT,

@@ -198,7 +198,7 @@ class ResourcePackClientResponseHandler extends NetworkHandler {
         packet.onlySpawnV1Villagers = false;
         packet.personaDisabled = false;
         packet.customSkinsDisabled = false;
-        packet.emoteChatMuted = false;
+        packet.emoteChatMuted = true;
         packet.gameVersion = MINECRAFT_VERSION;
         packet.limitedWorldWidth = 16;
         packet.limitedWorldLength = 16;
@@ -208,11 +208,11 @@ class ResourcePackClientResponseHandler extends NetworkHandler {
         packet.experimentalGameplayOverride = false;
         packet.chatRestrictionLevel = 0;
         packet.disablePlayerInteractions = false;
-        packet.serverIdentfier = "SerenityJS";
+        packet.serverIdentfier = "Enderquest";
         packet.worldIdentifier = player.world.identifier;
-        packet.scenarioIdentifier = "SerenityJS";
+        packet.scenarioIdentifier = "Enderquest";
         packet.ownerIdentifier = player.username;
-        packet.levelId = "SerenityJS";
+        packet.levelId = "Enderquest";
         packet.worldName = player.world.identifier;
         packet.premiumWorldTemplateId = player.world.identifier;
         packet.isTrial = false;
