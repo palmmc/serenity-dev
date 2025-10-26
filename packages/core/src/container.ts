@@ -138,7 +138,7 @@ class Container {
    * @returns Whether the item was successfully added into the container.
    */
   public addItem(item: ItemStack): boolean {
-    let amount = item.stackSize;
+    let amount = item.getStackSize();
     // Non-stackable logic.
     if (!item.isStackable) {
       const emptySlot = this.storage.indexOf(null);
@@ -156,7 +156,7 @@ class Container {
     while (amount > 0) {
       const existingSlotIndex = this.storage.findIndex(
         (slot) =>
-          slot && slot.stackSize < slot.maxStackSize && item.equals(slot)
+          slot && slot.getStackSize() < slot.maxStackSize && item.equals(slot)
       );
 
       // If a suitable stack is found, add to it.
@@ -165,7 +165,7 @@ class Container {
 
         // Calculate how many items we can add to this stack.
         const amountToAdd = Math.min(
-          existingItem.maxStackSize - existingItem.stackSize,
+          existingItem.maxStackSize - existingItem.getStackSize(),
           amount
         );
 
@@ -183,7 +183,7 @@ class Container {
         // Determine how many items to put in the new stack.
         const amountToSet = Math.min(item.maxStackSize, amount);
 
-        item.stackSize = amountToSet;
+        item.setStackSize(amountToSet);
 
         this.setItem(emptySlotIndex, item);
         amount -= amountToSet;
