@@ -18,6 +18,7 @@ import {
   ItemStackWearableTrait
 } from "../../item";
 import { Container } from "../../container";
+import { EntityDeathOptions } from "../..";
 
 import { EntityInventoryTrait } from "./inventory";
 import { EntityTrait } from "./trait";
@@ -187,7 +188,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the head item is not null
     if (head) {
       // Get the level storage of the head item
-      const headStorage = head.getLevelStorage();
+      const headStorage = head.getStorage();
 
       // Create a new int tag for the head slot
       headStorage.add(new IntTag(EquipmentSlot.Head, "Slot"));
@@ -199,7 +200,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the chest item is not null
     if (chest) {
       // Get the level storage of the chest item
-      const chestStorage = chest.getLevelStorage();
+      const chestStorage = chest.getStorage();
 
       // Create a new int tag for the chest slot
       chestStorage.add(new IntTag(EquipmentSlot.Chest, "Slot"));
@@ -211,7 +212,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the legs item is not null
     if (legs) {
       // Get the level storage of the legs item
-      const legsStorage = legs.getLevelStorage();
+      const legsStorage = legs.getStorage();
 
       // Create a new int tag for the legs slot
       legsStorage.add(new IntTag(EquipmentSlot.Legs, "Slot"));
@@ -223,7 +224,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the feet item is not null
     if (feet) {
       // Get the level storage of the feet item
-      const feetStorage = feet.getLevelStorage();
+      const feetStorage = feet.getStorage();
 
       // Create a new int tag for the feet slot
       feetStorage.add(new IntTag(EquipmentSlot.Feet, "Slot"));
@@ -286,9 +287,12 @@ class EntityEquipmentTrait extends EntityTrait {
     this.entity.removeStorageEntry("Armor");
   }
 
-  public onDeath(): void {
+  public onDeath(options: EntityDeathOptions): void {
     // Check if the entity is a player, and the keep inventory gamerule is enabled
-    if (this.entity.isPlayer() && this.entity.world.gamerules.keepInventory)
+    if (
+      options.cancel ||
+      (this.entity.isPlayer() && this.entity.world.gamerules.keepInventory)
+    )
       return;
 
     // Iterate over the armor container slots
