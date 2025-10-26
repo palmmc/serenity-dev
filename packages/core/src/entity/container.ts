@@ -6,7 +6,7 @@ import {
   FullContainerName,
   InventoryContentPacket,
   InventorySlotPacket,
-  NetworkItemStackDescriptor
+  NetworkItemStackDescriptor,
 } from "@serenityjs/protocol";
 
 import { Container } from "../container";

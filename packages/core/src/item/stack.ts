@@ -2,7 +2,7 @@ import {
   CompletedUsingItemPacket,
   ItemUseMethod,
   NetworkItemInstanceDescriptor,
-  NetworkItemStackDescriptor
+  NetworkItemStackDescriptor,
 } from "@serenityjs/protocol";
 import { CompoundTag, StringTag } from "@serenityjs/nbt";
 
@@ -13,7 +13,7 @@ import { World } from "../world";
 import {
   PlayerUseItemOnBlockSignal,
   PlayerUseItemOnEntitySignal,
-  PlayerUseItemSignal
+  PlayerUseItemSignal,
 } from "../events";
 import { JSONLikeValue } from "../types";
 
@@ -22,19 +22,19 @@ import {
   ItemType,
   ItemTypeBlockPlacerComponent,
   type ItemTypeComponent,
-  ItemTypeComponentCollection
+  ItemTypeComponentCollection,
 } from "./identity";
 import {
   ItemStackDisplayTrait,
   ItemStackDurabilityTrait,
-  ItemStackTrait
+  ItemStackTrait,
 } from "./traits";
 import {
   type ItemStackOptions,
   type ItemStackUseOptions,
   type ItemStackUseOnBlockOptions,
   type ItemStackUseOnEntityOptions,
-  DefaultItemStackOptions
+  DefaultItemStackOptions,
 } from "./types";
 import { ItemStackLevelStorage } from "./storage";
 
@@ -817,11 +817,11 @@ class ItemStack {
 
     // Stringify the dynamicProperties.
     const dynamicProperties = JSON.stringify([
-      ...this.storage.getAllDynamicProperties()
+      ...this.storage.getAllDynamicProperties(),
     ]);
 
     const otherDynamicProperties = JSON.stringify([
-      ...other.storage.getAllDynamicProperties()
+      ...other.storage.getAllDynamicProperties(),
     ]);
 
     // Check if the dynamicProperties are equal.
@@ -893,8 +893,8 @@ class ItemStack {
       extras: {
         nbt: item.nbt,
         canDestroy: [],
-        canPlaceOn: []
-      }
+        canPlaceOn: [],
+      },
     };
   }
 
@@ -911,7 +911,7 @@ class ItemStack {
     // Return the item stack descriptor.
     return {
       ...instance,
-      itemStackId: item.networkStackId
+      itemStackId: item.networkStackId,
     };
   }
 
@@ -926,7 +926,7 @@ class ItemStack {
       stackSize: other.getStackSize(),
       auxiliary: other.getAuxiliaryValue(),
       world: other.world,
-      storage: other.storage
+      storage: other.storage,
     });
 
     // Return the new item stack.
@@ -952,7 +952,7 @@ class ItemStack {
     const item = new this(type.identifier, {
       stackSize: descriptor.stackSize ?? 1,
       auxiliary: descriptor.metadata ?? 0,
-      ...options
+      ...options,
     });
 
     // Check if the descriptor has extras.
@@ -988,7 +988,7 @@ class ItemStack {
     // Create a new item stack from the identifier.
     const stack = new ItemStack(type, {
       world,
-      storage
+      storage,
     });
 
     // Return the item stack.
