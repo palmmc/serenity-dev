@@ -17,19 +17,19 @@ const register = (world: World) => {
         {
           target: TargetEnum,
           item: [ItemEnum, true],
-          auxiliary: [IntegerEnum, true],
+          metadata: [IntegerEnum, true],
           amount: [IntegerEnum, true]
         },
         (context) => {
           // Get the targets from the context
           const targets = context.target.result as Array<Entity>;
 
-          // Get the result of the item, amount, and auxiliary
+          // Get the result of the item, amount, and metadata
           const itemResult = context.item?.result as string | undefined;
           const itemIdentifier = itemResult
             ? `${itemResult.includes(":") ? "" : "minecraft:"}${itemResult}`
             : undefined;
-          const itemauxiliary = context.auxiliary?.result ?? 0;
+          const itemMetadata = context.metadata?.result ?? 0;
           const itemAmount = context.amount?.result;
           let itemCount = 0;
 
@@ -50,12 +50,12 @@ const register = (world: World) => {
               if (
                 !itemStack ||
                 (itemStack.type.identifier !== itemIdentifier &&
-                  itemStack.getAuxiliaryValue() !== itemauxiliary)
+                  itemStack.metadata !== itemMetadata)
               ) {
                 continue;
               }
 
-              const stackAmount = itemStack.getStackSize();
+              const stackAmount = itemStack.stackSize;
               const remaining = stackAmount - (itemAmount ?? 1);
 
               if (remaining < 0) {
