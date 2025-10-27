@@ -118,7 +118,7 @@ class Container {
 
     // Check if the item amount is 0
     // If so, set the slot to null as there is no item
-    if (item.getStackSize() === 0) this.clearSlot(slot);
+    if (item.stackSize === 0) this.clearSlot(slot);
 
     // Set the container of the item
     item.container = this;
@@ -207,13 +207,13 @@ class Container {
     if (!item) return null;
 
     // Calculate the amount of items to remove.
-    const removed = Math.min(amount, item.getStackSize());
+    const removed = Math.min(amount, item.stackSize);
 
     // Subtract the amount from the item.
     item.decrementStack(removed);
 
     // Check if the item amount is 0.
-    if (item.getStackSize() === 0) this.storage[slot] = null;
+    if (item.stackSize === 0) this.storage[slot] = null;
 
     // Return the removed item.
     return item;
@@ -231,32 +231,28 @@ class Container {
     if (item === null) return null;
 
     // Calculate the amount of items to remove.
-    const removed = Math.min(amount, item.getStackSize());
+    const removed = Math.min(amount, item.stackSize);
     item.decrementStack(removed);
 
     // Check if the item amount is 0.
-    if (item.getStackSize() === 0) this.clearSlot(slot);
+    if (item.stackSize === 0) this.clearSlot(slot);
 
     // Create a new item with the removed amount.
-    const newItem = new ItemStack(item.type, {
-      ...item,
-      stackSize: removed,
-      storage: undefined
-    });
+    const newItem = new ItemStack(item.type, { ...item, stackSize: removed });
 
     // Clone the dynamic properties of the item to the new item.
-    for (const [key, value] of item.getStorage().getAllDynamicProperties())
-      newItem.getStorage().setDynamicProperty(key, value);
+    for (const [key, value] of item.dynamicProperties)
+      newItem.dynamicProperties.set(key, value);
 
     // Clone the traits of the item to the new item.
-    for (const trait of item.getAllTraits())
+    for (const trait of item.traits.values())
       newItem.addTrait(trait.clone(newItem));
 
     // Update the slot for all occupants.
     this.updateSlot(slot);
 
     // Clone the NBT tags of the item.
-    for (const tag of item.getStorage().getStackNbt().values()) {
+    for (const tag of item.nbt.values()) {
       newItem.nbt.add(tag);
     }
 
@@ -422,7 +418,7 @@ class Container {
       if (!item) continue;
 
       // Iterate over the traits of the item and call the onContainerOpen method.
-      for (const trait of item.getAllTraits()) trait.onContainerOpen?.(player);
+      for (const trait of item.traits.values()) trait.onContainerOpen?.(player);
     }
   }
 
@@ -466,7 +462,8 @@ class Container {
       if (!item) continue;
 
       // Iterate over the traits of the item and call the onContainerClose method.
-      for (const trait of item.getAllTraits()) trait.onContainerClose?.(player);
+      for (const trait of item.traits.values())
+        trait.onContainerClose?.(player);
     }
   }
 }

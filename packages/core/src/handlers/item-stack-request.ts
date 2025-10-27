@@ -104,7 +104,7 @@ class ItemStackRequestHandler extends NetworkHandler {
                   const itemStack = ItemStack.from(item);
 
                   // Get the current stack size and multiply it by the amount.
-                  itemStack.setStackSize(itemStack.getStackSize() * amount);
+                  itemStack.setStackSize(itemStack.stackSize * amount);
 
                   // Add the item stack to the player's inventory.
                   const destinationItem = destination.getItem(destinationSlot);
@@ -163,11 +163,11 @@ class ItemStackRequestHandler extends NetworkHandler {
           // Get the destination item.
           const destinationItem = destination.getItem(destinationSlot);
 
-          if (amount <= sourceItem.getStackSize()) {
+          if (amount <= sourceItem.stackSize) {
             const item = source.takeItem(sourceSlot, amount);
             if (!item) throw new Error("Invalid item.");
             if (destinationItem) {
-              destinationItem.incrementStack(item.getStackSize());
+              destinationItem.incrementStack(item.stackSize);
             } else {
               destination.setItem(destinationSlot, item);
               // Clear the cursor, this appears to be a bug in the protocol.
@@ -359,7 +359,7 @@ class ItemStackRequestHandler extends NetworkHandler {
 
           // Get the destination.
           const destination = destinationAction.takeOrPlace.destination;
-          const stackSize = destinationAction.takeOrPlace.amount;
+          const amount = destinationAction.takeOrPlace.amount;
 
           // Get the container.
           const container = player.getContainer(
@@ -387,20 +387,17 @@ class ItemStackRequestHandler extends NetworkHandler {
               `Received invalid creative item: ${craft.creativeIndex}`
             );
 
-          // Create the item stack from the network instance.
+          // Create the item stack.
           const itemStack = ItemStack.fromNetworkInstance(
-            creativeItem.descriptor,
-            {
-              stackSize,
-              storage: creativeItem.stackStorage // NBT data for the item stack
-            }
-          );
+            creativeItem.descriptor
+          ) as ItemStack;
 
-          // Check if the item stack was created successfully.
-          if (!itemStack)
-            throw new Error(
-              `Failed to create item stack for creative item: ${craft.creativeIndex}`
-            );
+          // Check if the item stack exists.
+          if (creativeItem.stackStorage)
+            itemStack.loadLevelStorage(world, creativeItem.stackStorage);
+
+          // Set the amount of the item stack.
+          itemStack.setStackSize(amount);
 
           // Set the item stack in the container
           container.setItem(destination.slot, itemStack);
