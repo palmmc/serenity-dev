@@ -275,7 +275,7 @@ class Dimension {
             if (!item) continue;
 
             // Iterate over all the traits in the item
-            for (const trait of item.getAllTraits())
+            for (const [identifier, trait] of item.traits)
               try {
                 // Tick the item trait
                 trait.onTick?.({ currentTick, deltaTick });
@@ -286,12 +286,12 @@ class Dimension {
               } catch (reason) {
                 // Log the error to the console
                 this.world.logger.error(
-                  `Failed to tick item trait "${trait.identifier}" for item "${item.type.identifier}" in dimension "${this.identifier}"`,
+                  `Failed to tick item trait "${identifier}" for item "${item.type.identifier}" in dimension "${this.identifier}"`,
                   reason
                 );
 
                 // Remove the trait from the item
-                item.removeTrait(trait.identifier);
+                item.traits.delete(identifier);
               }
           }
         }

@@ -1,4 +1,4 @@
-import { CompoundTag } from "@serenityjs/nbt";
+import { ItemStackLevelStorage } from "../storage";
 
 import type { World } from "../../world";
 
@@ -7,7 +7,7 @@ import type { World } from "../../world";
  */
 const DefaultItemStackOptions: ItemStackOptions = {
   stackSize: 1,
-  auxiliary: 0
+  metadata: 0
 };
 
 interface ItemStackOptions {
@@ -17,9 +17,9 @@ interface ItemStackOptions {
   stackSize: number;
 
   /**
-   * The auxiliary value of the item stack.
+   * The metadata of the item stack.
    */
-  auxiliary: number;
+  metadata: number;
 
   /**
    * The world that the item stack is in.
@@ -27,9 +27,9 @@ interface ItemStackOptions {
   world?: World;
 
   /**
-   * The strorage of the item stack, to persist data across level loads.
+   * The level storage for the item stack.
    */
-  storage?: CompoundTag | null;
+  storage?: ItemStackLevelStorage;
 }
 
 export { ItemStackOptions, DefaultItemStackOptions };

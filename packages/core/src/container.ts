@@ -213,13 +213,13 @@ class Container {
     if (!item) return null;
 
     // Calculate the amount of items to remove.
-    const removed = Math.min(amount, item.getStackSize());
+    const removed = Math.min(amount, item.stackSize);
 
     // Subtract the amount from the item.
     item.decrementStack(removed);
 
     // Check if the item amount is 0.
-    if (item.getStackSize() === 0) this.storage[slot] = null;
+    if (item.stackSize === 0) this.storage[slot] = null;
 
     // Return the removed item.
     return item;
@@ -249,11 +249,11 @@ class Container {
     }
 
     // Calculate the amount of items to remove.
-    const removed = Math.min(amount, item.getStackSize());
+    const removed = Math.min(amount, item.stackSize);
     item.decrementStack(removed);
 
     // Check if the item amount is 0.
-    if (item.getStackSize() === 0) this.clearSlot(slot);
+    if (item.stackSize === 0) this.clearSlot(slot);
 
     // Create a new item with the removed amount.
     const newItem = new ItemStack(item.type, {
@@ -263,18 +263,18 @@ class Container {
     });
 
     // Clone the dynamic properties of the item to the new item.
-    for (const [key, value] of item.getStorage().getAllDynamicProperties())
-      newItem.getStorage().setDynamicProperty(key, value);
+    for (const [key, value] of item.dynamicProperties)
+      newItem.dynamicProperties.set(key, value);
 
     // Clone the traits of the item to the new item.
-    for (const trait of item.getAllTraits())
+    for (const trait of item.traits.values())
       newItem.addTrait(trait.clone(newItem));
 
     // Update the slot for all occupants.
     this.updateSlot(slot);
 
     // Clone the NBT tags of the item.
-    for (const tag of item.getStorage().getStackNbt().values()) {
+    for (const tag of item.nbt.values()) {
       newItem.nbt.add(tag);
     }
 
@@ -423,7 +423,7 @@ class Container {
       if (!item) continue;
 
       // Iterate over the traits of the item and call the onContainerOpen method.
-      for (const trait of item.getAllTraits()) trait.onContainerOpen?.(player);
+      for (const trait of item.traits.values()) trait.onContainerOpen?.(player);
     }
 
     // Return the container identifier assigned to the player.
@@ -464,8 +464,35 @@ class Container {
       if (!item) continue;
 
       // Iterate over the traits of the item and call the onContainerClose method.
-      for (const trait of item.getAllTraits()) trait.onContainerClose?.(player);
+      for (const trait of item.traits.values())
+        trait.onContainerClose?.(player);
     }
+  }
+
+  /**
+   * The next container identifier.
+   */
+  private static nextContainerId = ContainerId.First;
+
+  /**
+   * Gets the next container identifier.
+   * @returns The next container identifier.
+   */
+  public static getNextContainerId(): ContainerId {
+    // Increment the current container id
+    let id = Container.nextContainerId++;
+
+    // Wrap around if exceeds the last container id
+    if (id > ContainerId.Last) {
+      // Assign the next container id to the first container id
+      Container.nextContainerId = ContainerId.First;
+
+      // Increment the id to return
+      id = Container.nextContainerId;
+    }
+
+    // Return the id
+    return id;
   }
 
   /**

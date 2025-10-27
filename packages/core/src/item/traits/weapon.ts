@@ -129,7 +129,7 @@ class ItemStackWeaponTrait extends ItemStackTrait {
     }
 
     // Creata a new component for the item
-    this.item.setDynamicProperty<ItemWeaponComponent>(
+    this.item.addDynamicProperty<ItemWeaponComponent>(
       ItemStackWeaponTrait.identifier,
       {
         baseDamage,

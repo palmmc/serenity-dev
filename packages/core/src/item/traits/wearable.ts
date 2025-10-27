@@ -145,7 +145,7 @@ class ItemStackWearableTrait extends ItemStackTrait {
     const equipment = entity.getTrait(EntityEquipmentTrait);
 
     // Get the current slot of the item
-    const currentSlot = this.item.getSlot();
+    const currentSlot = this.item.slot;
 
     // Check if the item isn't in a container
     if (currentSlot === -1)

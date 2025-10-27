@@ -177,7 +177,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the head item is not null
     if (head) {
       // Get the level storage of the head item
-      const headStorage = head.getStorage();
+      const headStorage = head.getLevelStorage();
 
       // Create a new int tag for the head slot
       headStorage.add(new IntTag(EquipmentSlot.Head, "Slot"));
@@ -189,7 +189,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the chest item is not null
     if (chest) {
       // Get the level storage of the chest item
-      const chestStorage = chest.getStorage();
+      const chestStorage = chest.getLevelStorage();
 
       // Create a new int tag for the chest slot
       chestStorage.add(new IntTag(EquipmentSlot.Chest, "Slot"));
@@ -201,7 +201,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the legs item is not null
     if (legs) {
       // Get the level storage of the legs item
-      const legsStorage = legs.getStorage();
+      const legsStorage = legs.getLevelStorage();
 
       // Create a new int tag for the legs slot
       legsStorage.add(new IntTag(EquipmentSlot.Legs, "Slot"));
@@ -213,7 +213,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the feet item is not null
     if (feet) {
       // Get the level storage of the feet item
-      const feetStorage = feet.getStorage();
+      const feetStorage = feet.getLevelStorage();
 
       // Create a new int tag for the feet slot
       feetStorage.add(new IntTag(EquipmentSlot.Feet, "Slot"));

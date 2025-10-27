@@ -90,7 +90,7 @@ class InventoryTransactionHandler extends NetworkHandler {
         // Check if the player is using an item
         if (player.itemTarget)
           // Call the onRelease method for the item stack traits
-          for (const trait of player.itemTarget.getAllTraits())
+          for (const trait of player.itemTarget.traits.values())
             trait.onRelease?.(player);
 
         // Set the player's item target to null
@@ -209,7 +209,7 @@ class InventoryTransactionHandler extends NetworkHandler {
         // Check if the interaction was canceled and the player is placing a block
         if (results.cancel || player.openedContainer) {
           // Update the item stack to reflect the interaction
-          if (stack) stack.container?.updateSlot(stack.getSlot());
+          if (stack) stack.update();
 
           // Create a new UpdateBlockPacket to revert the block state
           const packet = new UpdateBlockPacket();
@@ -282,7 +282,7 @@ class InventoryTransactionHandler extends NetworkHandler {
 
           // Get the permutation to set the block state
           const permutation =
-            useOptions.placingBlock.permutations[stack.getAuxiliaryValue()] ??
+            useOptions.placingBlock.permutations[stack.metadata] ??
             useOptions.placingBlock.getPermutation();
 
           // Create a new BlockPlacementOptions object
