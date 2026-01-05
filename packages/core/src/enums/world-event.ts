@@ -13,6 +13,7 @@ enum WorldEvent {
   EntityHit,
   EntityHurt,
   EntityDropItem,
+  EntityItemPickup,
   EffectAdd,
   EffectRemove,
   PlayerInitialized,
@@ -37,6 +38,7 @@ enum WorldEvent {
   PlayerContainerInteraction,
   PlayerDropExperience,
   PlayerEditSign,
+  PlayerCraftRecipe,
   BlockUpdate,
   BlockPermutationUpdate,
   ItemStackDamaged

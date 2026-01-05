@@ -17,6 +17,7 @@ import type {
   PlayerBreakBlockSignal,
   PlayerChatSignal,
   EntityDropItemSignal,
+  EntityItemPickupSignal,
   PlayerGamemodeChangeSignal,
   PlayerInteractWithBlockSignal,
   PlayerInteractWithEntitySignal,
@@ -40,7 +41,8 @@ import type {
   BlockPermutationUpdateSignal,
   ItemStackDamagedSignal,
   PlayerDropExperienceSignal,
-  PlayerEditSignSignal
+  PlayerEditSignSignal,
+  PlayerCraftRecipeSignal
 } from "../../events";
 
 interface WorldEventSignals {
@@ -57,6 +59,7 @@ interface WorldEventSignals {
   [WorldEvent.EntityDied]: [EntityDiedSignal];
   [WorldEvent.EntityHurt]: [EntityHurtSignal];
   [WorldEvent.EntityDropItem]: [EntityDropItemSignal];
+  [WorldEvent.EntityItemPickup]: [EntityItemPickupSignal];
   [WorldEvent.HealthChanged]: [EntityHealthChangedSignal];
   [WorldEvent.EffectAdd]: [EffectAddSignal];
   [WorldEvent.EffectRemove]: [EffectRemoveSignal];
@@ -82,6 +85,7 @@ interface WorldEventSignals {
   [WorldEvent.PlayerContainerInteraction]: [PlayerContainerInteractionSignal];
   [WorldEvent.PlayerDropExperience]: [PlayerDropExperienceSignal];
   [WorldEvent.PlayerEditSign]: [PlayerEditSignSignal];
+  [WorldEvent.PlayerCraftRecipe]: [PlayerCraftRecipeSignal];
   [WorldEvent.BlockUpdate]: [];
   [WorldEvent.BlockPermutationUpdate]: [BlockPermutationUpdateSignal];
   [WorldEvent.ItemStackDamaged]: [ItemStackDamagedSignal];

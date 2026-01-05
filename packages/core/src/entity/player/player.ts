@@ -5,15 +5,11 @@ import {
   ChangeDimensionPacket,
   CommandPermissionLevel,
   ContainerName,
-  CraftingDataEntryType,
-  CraftingDataPacket,
-  CreativeContentPacket,
-  CreativeGroup,
-  CreativeItem,
   DataPacket,
   DisconnectMessage,
   DisconnectPacket,
   DisconnectReason,
+  FullContainerName,
   Gamemode,
   IPosition,
   MoveMode,
@@ -28,7 +24,9 @@ import {
   StopSoundPacket,
   TeleportCause,
   TextPacket,
-  TextPacketType,
+  TextType,
+  TextVariant,
+  TextVariantType,
   TransferPacket,
   UpdateAbilitiesPacket,
   UpdatePlayerGameTypePacket,
@@ -49,10 +47,7 @@ import { Container } from "../../container";
 import {
   ItemStackBundleTrait,
   ItemStack,
-  ItemType,
-  ItemTypeCooldownComponent,
-  ShapelessCraftingRecipe,
-  ShapedCraftingRecipe
+  ItemTypeCooldownComponent
 } from "../../item";
 import {
   EntityDimensionChangeSignal,
@@ -69,7 +64,8 @@ import {
   PlayerCraftingInputTrait,
   PlayerCursorTrait,
   PlayerTrait,
-  PlayerLevelingTrait
+  PlayerLevelingTrait,
+  PlayerCraftingOutputTrait
 } from "../traits";
 import { PlayerLevelStorage } from "../storage";
 import { PlayerSkin } from "../skin";
@@ -252,34 +248,6 @@ class Player extends Entity {
     for (const [, trait] of this.type.traits) this.addTrait(trait);
   }
 
-  // --- DEPRECATED - REMOVE IN FUTURE ---
-
-  /**
-   * The current gamemode of the player.
-   * @deprecated Use `getGamemode()` instead.
-   * Will be removed in version 0.8.14.
-   */
-  public get gamemode(): Gamemode {
-    this.world.logger.warn(
-      "The 'Player.gamemode' is deprecated. Please use 'getGamemode()' instead."
-    );
-
-    return this.getGamemode();
-  }
-
-  /**
-   * Set the current gamemode of the player.
-   * @deprecated Use `setGamemode()` instead.
-   * Will be removed in version 0.8.14.
-   */
-  public set gamemode(value: Gamemode) {
-    this.world.logger.warn(
-      "The 'Player.gamemode' is deprecated. Please use 'setGamemode()' instead."
-    );
-
-    this.setGamemode(value);
-  }
-
   /**
    * Send packets to the player (Normal Priority)
    * @param packets The packets to send to the player
@@ -351,16 +319,18 @@ class Player extends Entity {
    * @param gamemode The gamemode to set the player to.
    */
   public setGamemode(gamemode: Gamemode): void {
-    // Set the storage entry for the gamemode
-    this.storage.set("PlayerGameMode", new IntTag(gamemode));
-
+    // Create and emit a new PlayerGamemodeChangeSignal
     const signal = new PlayerGamemodeChangeSignal(
       this,
       this.getGamemode(),
       gamemode
     );
 
+    // Check if the signal was canceled
     if (!signal.emit()) return;
+
+    // Set the storage entry for the gamemode
+    this.storage.set("PlayerGameMode", new IntTag(gamemode));
 
     // Set the gamemode of the player
     this.dynamicProperties.set("gamemode", gamemode);
@@ -392,8 +362,15 @@ class Player extends Entity {
     packet.uniqueActorId = this.uniqueId;
     packet.inputTick = this.inputInfo.tick;
 
+    // Create a new SetPlayerGameTypePacket
+    const update = new SetPlayerGameTypePacket();
+    packet.gamemode = gamemode;
+
     // Broadcast the packet to the dimension
     this.dimension.broadcast(packet);
+
+    // Send the update packet to the player
+    this.send(update, packet);
   }
 
   /**
@@ -456,16 +433,17 @@ class Player extends Entity {
     if (typeof message === "string") rawText.rawtext = [{ text: message }];
     else rawText.rawtext = message.rawtext;
 
+    // Stringify the raw text.
+    const text = JSON.stringify(rawText);
+
     // Assign the packet data.
-    packet.type = TextPacketType.Json;
-    packet.needsTranslation = true;
-    packet.source = null;
-    packet.message = JSON.stringify(rawText);
-    packet.parameters = null;
+    packet.isLocalized = true;
+    packet.variantType = TextVariantType.MessageOnly;
+    packet.variant = new TextVariant(text, TextType.Json);
     packet.xuid = "";
     packet.platformChatId = "";
-    packet.filtered = JSON.stringify(rawText);
 
+    // Send the packet to the player.
     this.send(packet);
   }
 
@@ -493,15 +471,12 @@ class Player extends Entity {
    * Get a container from the player.
    * @param name The name of the container to get.
    */
-  public getContainer(
-    name: ContainerName,
-    dynamicId?: number
-  ): Container | null {
+  public getContainer(name: FullContainerName): Container | null {
     // Check if the super instance will fetch the container
-    const container = super.getContainer(name, dynamicId);
+    const container = super.getContainer(name);
 
     // Check if the container is null and the name is dynamic
-    if (container === null && name === ContainerName.Dynamic) {
+    if (container === null && name.identifier === ContainerName.Dynamic) {
       // Check if the player has the cursor trait
       if (!this.hasTrait(PlayerCursorTrait))
         throw new Error("The player does not have a cursor trait.");
@@ -529,7 +504,7 @@ class Player extends Entity {
     if (container !== null) return container;
 
     // Switch the container name
-    switch (name) {
+    switch (name.identifier) {
       default: {
         // Return the opened container if it exists
         return this.openedContainer;
@@ -545,6 +520,19 @@ class Player extends Entity {
 
         // Return the crafting input container
         return craftingInput.container;
+      }
+
+      case ContainerName.CraftingOutput:
+      case ContainerName.CreativeOutput: {
+        // Check if the player has the crafting output trait
+        if (!this.hasTrait(PlayerCraftingOutputTrait))
+          throw new Error("The player does not have a crafting output trait.");
+
+        // Get the crafting output trait
+        const craftingOutput = this.getTrait(PlayerCraftingOutputTrait);
+
+        // Return the crafting output container
+        return craftingOutput.container;
       }
 
       case ContainerName.Cursor: {
@@ -586,8 +574,8 @@ class Player extends Entity {
       : PermissionLevel.Member;
 
     abilities.commandPermissionLevel = this.isOp
-      ? CommandPermissionLevel.Operator
-      : CommandPermissionLevel.Normal;
+      ? CommandPermissionLevel.GameDirectors
+      : CommandPermissionLevel.Any;
 
     abilities.entityUniqueId = this.uniqueId;
     abilities.abilities = this.abilities.getAllAbilitiesAsLayers();
@@ -599,73 +587,13 @@ class Player extends Entity {
     // Get the biome definitions from the world's biome palette
     const biomes = this.world.biomePalette.getBiomeDefinitionList();
 
-    // Create a new CreativeContentPacket, and map the creative content to the packet
-    const content = new CreativeContentPacket();
+    // Get the creative content from the world's item palette
+    const content = this.world.itemPalette.getCreativeContent();
 
-    // Prepare an array to store the creative items
-    content.items = [];
+    // Get the crafting recipes from the world's item palette
+    const recipes = this.world.itemPalette.getCraftingRecipes();
 
-    // Map the creative content to the packet
-    content.groups = [...this.world.itemPalette.creativeGroups].map(
-      ([index, group]) => {
-        // Iterate over the items in the group
-        for (const { descriptor } of group.items) {
-          // Get the next index for the item
-          const itemIndex = content.items.length;
-
-          // Create and push the creative item to the packet
-          content.items.push(new CreativeItem(itemIndex, descriptor, index));
-        }
-
-        // Get the icon item type from the map
-        const icon = ItemType.toNetworkInstance(group.icon);
-
-        // Create a new creative group
-        return new CreativeGroup(group.category, group.identifier, icon);
-      }
-    );
-
-    // Create a new CraftingDataPacket, and map the crafting recipes to the packet
-    const recipes = new CraftingDataPacket();
-
-    // Assign the recipe properties
-    recipes.clearRecipes = true;
-    recipes.containers = [];
-    recipes.crafting = [];
-    recipes.materitalReducers = [];
-    recipes.potions = [];
-
-    // Iterate over the recipes in the item palette
-    for (const [, recipe] of this.world.itemPalette.recipes) {
-      // Check if the recipe is a ShapedCraftingRecipe
-      if (recipe instanceof ShapelessCraftingRecipe) {
-        // Convert the recipe to a network format
-        const shapeless = ShapelessCraftingRecipe.toNetwork(recipe);
-
-        // Iterate over the shapeless recipes and add them to the packet
-        for (const recipe of shapeless) {
-          // Add the recipe to the crafting data packet
-          recipes.crafting.push({
-            type: CraftingDataEntryType.ShapelessRecipe,
-            recipe
-          });
-        }
-      } else if (recipe instanceof ShapedCraftingRecipe) {
-        // Convert the recipe to a network format
-        const shaped = ShapedCraftingRecipe.toNetwork(recipe);
-
-        // Iterate over the shaped recipes and add them to the packet
-        for (const recipe of shaped) {
-          // Add the recipe to the crafting data packet
-          recipes.crafting.push({
-            type: CraftingDataEntryType.ShapedRecipe,
-            recipe
-          });
-        }
-      }
-    }
-
-    // Send the data, abilities, and gamemode packets to the player
+    // // Send the data, abilities, and gamemode packets to the player
     this.send(data, abilities, gamemode);
 
     // Send the biome definitions, creative content, and crafting data to the player
