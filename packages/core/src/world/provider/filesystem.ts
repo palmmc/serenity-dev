@@ -423,6 +423,9 @@ class FileSystemProvider extends WorldProvider {
       // Delete the blocks file if it exists and there are no blocks.
       rmSync(blocksPath, { force: true });
     } else {
+      // Remove the existing file if it exists.
+      if (existsSync(blocksPath)) rmSync(blocksPath, { force: true });
+
       // Create a new list tag for the blocks.
       const list = new ListTag<CompoundTag>(blocks);
 
