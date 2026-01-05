@@ -2,7 +2,7 @@ import {
   AbilityIndex,
   BlockPosition,
   ContainerType,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 import { CompoundTag, IntTag, ListTag } from "@serenityjs/nbt";
 
@@ -11,7 +11,7 @@ import { Block } from "../block";
 import {
   BlockDestroyOptions,
   BlockInteractionOptions,
-  BlockInventoryTraitOptions
+  BlockInventoryTraitOptions,
 } from "../../types";
 import { ItemStack } from "../../item";
 
@@ -128,7 +128,7 @@ class BlockInventoryTrait extends BlockTrait {
       if (!itemStack) continue;
 
       // Get the item stack level storage
-      const storage = itemStack.getLevelStorage();
+      const storage = itemStack.getStorage();
 
       // Create a new int tag for the slot
       storage.add(new IntTag(i, "Slot"));
@@ -157,7 +157,7 @@ class BlockInventoryTrait extends BlockTrait {
       if (!itemStack) continue;
 
       // Get the item stack level storage
-      const storage = itemStack.getLevelStorage();
+      const storage = itemStack.getStorage();
 
       // Create a new int tag for the slot
       storage.add(new IntTag(i, "Slot"));

@@ -25,7 +25,7 @@ class ItemStackWeaponTrait extends ItemStackTrait {
     ItemIdentifier.DiamondSword,
     ItemIdentifier.DiamondAxe,
     ItemIdentifier.NetheriteSword,
-    ItemIdentifier.NetheriteAxe
+    ItemIdentifier.NetheriteAxe,
   ];
 
   /**
@@ -128,12 +128,12 @@ class ItemStackWeaponTrait extends ItemStackTrait {
       }
     }
 
-    // Creata a new component for the item
-    this.item.addDynamicProperty<ItemWeaponComponent>(
+    // Create a new component for the item
+    this.item.setDynamicProperty<ItemWeaponComponent>(
       ItemStackWeaponTrait.identifier,
       {
         baseDamage,
-        criticalDamage
+        criticalDamage,
       }
     );
   }

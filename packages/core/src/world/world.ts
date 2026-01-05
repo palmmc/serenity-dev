@@ -13,6 +13,9 @@ import {
   SetDifficultyPacket,
   SetTimePacket,
   TextPacket,
+  TextType,
+  TextVariant,
+  TextVariantType,
   Vector3f,
 } from "@serenityjs/protocol";
 import Emitter from "@serenityjs/emitter";

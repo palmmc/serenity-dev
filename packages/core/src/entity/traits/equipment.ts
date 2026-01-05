@@ -3,7 +3,7 @@ import {
   Enchantment,
   EquipmentSlot,
   MobArmorEquipmentPacket,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 import { CompoundTag, IntTag, ListTag } from "@serenityjs/nbt";
 
@@ -14,7 +14,7 @@ import {
   ItemStackEnchantableTrait,
   ItemStackKeepOnDieTrait,
   ItemStack,
-  ItemStackWearableTrait
+  ItemStackWearableTrait,
 } from "../../item";
 import { Container } from "../../container";
 import { EntityDeathOptions } from "../..";
@@ -177,7 +177,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the head item is not null
     if (head) {
       // Get the level storage of the head item
-      const headStorage = head.getLevelStorage();
+      const headStorage = head.getStorage();
 
       // Create a new int tag for the head slot
       headStorage.add(new IntTag(EquipmentSlot.Head, "Slot"));
@@ -189,7 +189,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the chest item is not null
     if (chest) {
       // Get the level storage of the chest item
-      const chestStorage = chest.getLevelStorage();
+      const chestStorage = chest.getStorage();
 
       // Create a new int tag for the chest slot
       chestStorage.add(new IntTag(EquipmentSlot.Chest, "Slot"));
@@ -201,7 +201,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the legs item is not null
     if (legs) {
       // Get the level storage of the legs item
-      const legsStorage = legs.getLevelStorage();
+      const legsStorage = legs.getStorage();
 
       // Create a new int tag for the legs slot
       legsStorage.add(new IntTag(EquipmentSlot.Legs, "Slot"));
@@ -213,7 +213,7 @@ class EntityEquipmentTrait extends EntityTrait {
     // Check if the feet item is not null
     if (feet) {
       // Get the level storage of the feet item
-      const feetStorage = feet.getLevelStorage();
+      const feetStorage = feet.getStorage();
 
       // Create a new int tag for the feet slot
       feetStorage.add(new IntTag(EquipmentSlot.Feet, "Slot"));

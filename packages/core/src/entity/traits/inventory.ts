@@ -5,7 +5,7 @@ import {
   ContainerType,
   MobEquipmentPacket,
   NetworkItemStackDescriptor,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 import { CompoundTag, IntTag, ListTag } from "@serenityjs/nbt";
 
@@ -55,9 +55,9 @@ class EntityInventoryTrait extends EntityTrait {
       // Determine the container type
       entity.isPlayer()
         ? ContainerType.Inventory
-        : (options?.type ?? ContainerType.Container),
+        : options?.type ?? ContainerType.Container,
       // Determine the container size
-      entity.isPlayer() ? 36 : (options?.size ?? 27)
+      entity.isPlayer() ? 36 : options?.size ?? 27
     );
 
     // Assign the container identifier
@@ -151,7 +151,7 @@ class EntityInventoryTrait extends EntityTrait {
       if (!itemStack) continue;
 
       // Get the item stack level storage
-      const storage = itemStack.getLevelStorage();
+      const storage = itemStack.getStorage();
 
       // Create a new int tag for the slot
       storage.add(new IntTag(i, "Slot"));

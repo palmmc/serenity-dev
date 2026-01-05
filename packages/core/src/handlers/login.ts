@@ -10,19 +10,18 @@ import {
   PlayStatus,
   PlayStatusPacket,
   ResourcePacksInfoPacket,
-  SerializedSkin
+  SerializedSkin,
 } from "@serenityjs/protocol";
 import { Connection } from "@serenityjs/raknet";
 import {
   Authentication,
-  AuthenticationType
+  AuthenticationType,
 } from "@bedrock-apis/carolina-authentication";
 
 import { NetworkHandler } from "../network";
 import { ClientSystemInfo, Player } from "../entity";
 import { PlayerProperties } from "../types";
 import { PlayerJoinSignal } from "../events";
-import { AuthenticationType } from "@serenityjs/protocol/src/types/authentication-type";
 
 class LoginHandler extends NetworkHandler {
   public static readonly packet = Packet.Login;
@@ -31,85 +30,35 @@ class LoginHandler extends NetworkHandler {
     packet: LoginPacket,
     connection: Connection
   ): Promise<void> {
-    const { AuthenticationType: type, Token, Certificate } = Authentication.parse(
+    const { AuthenticationType: type, Token } = Authentication.parse(
       packet.tokens.identity
     );
     // Decode the tokens given by the client.
     // This contains the client data, identity data, and public key.
     // Along with the players XUID, display name, and uuid.
-    const { clientData, identityData, authenticationType } = LoginHandler.decode(packet.tokens);
 
-    // Check if the authentication type is valid.
-    // The LoginPacket passes one of three authentication types:
-    // 0 - Standard, the player is using their own token to connect.
-    // 1 - The connection is coming from a guest split screen session using the host's token.
-    // 2 - The connection is not authenticated.
-    // By default, we do not want to allow guest or unauthenticated connections to the server.
-
-    if (authenticationType !== AuthenticationType.Full && !this.serenity.properties.allowUnsignedConnections) {
-      // Disconnect the player.
-      return this.network.disconnectConnection(
-        connection,
-        "Failed to authenticate. Make sure you are connected to Xbox Live before joining the server.",
-        DisconnectReason.NotAuthenticated
-      );
-    }
-
-    // Get the clients xuid and username.
-    const xuid = identityData.XUID;
-    const uuid = identityData.identity;
-    const username = identityData.displayName;
-
-    // Check if the xuid is smaller than 16 characters.
-    // If so then the xuid is invalid.
-    // Not sure if this is the best way to check if the xuid is valid, but it works for now.
-    // Possibly add a xuid resolver in the future, but may leave that up to plugins.
-    if (xuid.length < 16) {
-      // Disconnect the player.
-      return this.network.disconnectConnection(
+    if (type === AuthenticationType.OfflineSelfSigned)
+      return void this.network.disconnectConnection(
         connection,
         "Offline mode is not supported. Please connect to xbox services",
         DisconnectReason.EmptyAuthFromDiscovery
       );
-    }
 
-    // Handle authentication based on mode (online vs offline)
-    let cpk: string;
-    let xid: string;
-    let xname: string;
-    let uuid: string;
-
-    if (type === AuthenticationType.OfflineSelfSigned) {
-      // Offline mode: Token is empty, JWT chain is in Certificate
-      // Certificate is JSON: {"chain": ["jwt1", ...]}
-      if (!Certificate) {
-        throw new Error("Invalid offline login: missing Certificate");
-      }
-      const offlineData = LoginHandler.parseOfflineCertificate(Certificate);
-      cpk = offlineData.cpk;
-      xname = offlineData.displayName;
-      uuid = offlineData.identity || LoginHandler.getUUIDFromUsername(xname);
-      // Generate a fake XUID from username for compatibility with plugins that use XUID for storage
-      xid = LoginHandler.getOfflineXUID(xname);
-    } else {
-      // Online mode: verify with Xbox Live
-      const onlineData = await Authentication.authenticate(Token);
-      cpk = onlineData.cpk;
-      xid = onlineData.xid;
-      xname = onlineData.xname;
-      uuid = LoginHandler.getUUIDFromXUID(xid);
-    }
+    const { cpk, xid, xname } = await Authentication.authenticate(Token);
+    const uuid = LoginHandler.getUUIDFromXUID(xid);
     const clientData = await Authentication.verify<ClientData>(
       packet.tokens.client,
       cpk
     );
 
-    // Check if the player is already connected by XUID
-    const existingPlayer = this.serenity.getPlayerByXuid(xid);
-    
-    if (existingPlayer) {
-      // Disconnect the existing player.
-      existingPlayer.disconnect(
+    // Check if the player is already connected.
+    // And if so, disconnect the player the player currently connected.
+    if (this.serenity.getPlayerByXuid(xid)) {
+      // Get the player to disconnect.
+      const player = this.serenity.getPlayerByXuid(xid) as Player;
+
+      // Disconnect the player.
+      player.disconnect(
         "You have been disconnected from the server because you logged in from another location.",
         DisconnectReason.LoggedInOtherLocation
       );
@@ -154,7 +103,7 @@ class LoginHandler extends NetworkHandler {
       xuid: xid,
       uuid,
       clientSystemInfo,
-      skin
+      skin,
     };
 
     // Assign the storage if it exists.
@@ -218,110 +167,19 @@ class LoginHandler extends NetworkHandler {
     );
   }
 
-  public static getUUIDFromUsername(username: string): string {
-    return uuidFromBytes(
-      new TextEncoder().encode(`OfflinePlayer:${username}`)
-    );
-  }
-
-  /**
-   * Generates a deterministic fake XUID for offline players
-   * Uses a hash of the username to create a consistent 16-digit numeric string
-   * @param username The player's username
-   * @returns A fake XUID string
-   */
-  public static getOfflineXUID(username: string): string {
-    const hash = createHash("sha256")
-      .update(`OfflineXUID:${username}`)
-      .digest();
-    // Take first 8 bytes and convert to a numeric string
-    // XUIDs are typically 16-digit numbers
-    const num = hash.readBigUInt64BE(0);
-    return num.toString().padStart(16, "0").slice(0, 16);
-  }
-
-  /**
-   * Parses an offline mode certificate to extract player identity
-   * @param certificate The Certificate string containing the JWT chain
-   * @returns The parsed offline player data
-   */
-  public static parseOfflineCertificate(certificate: string): {
-    cpk: string;
-    displayName: string;
-    identity: string;
-  } {
-    // Certificate is JSON: {"chain": ["jwt1", ...]}
-    const certData = JSON.parse(certificate) as { chain: string[] };
-    
-    // Find the token with extraData (contains player identity)
-    for (const jwt of certData.chain) {
-      // JWT format: header.payload.signature - we need the payload (middle part)
-      const parts = jwt.split(".");
-      if (parts.length !== 3) continue;
-      
-      // Decode base64url payload
-      const payload = JSON.parse(
-        Buffer.from(parts[1]!, "base64url").toString("utf8")
-      ) as {
-        extraData?: {
-          displayName: string;
-          identity: string;
-          XUID?: string;
-        };
-        identityPublicKey?: string;
-      };
-      
-      if (payload.extraData) {
-        return {
-          cpk: payload.identityPublicKey || "",
-          displayName: payload.extraData.displayName,
-          identity: payload.extraData.identity
-        };
-      }
-    }
-    
-    throw new Error("Invalid offline certificate: missing extraData");
-  }
-
   /**
    * Decodes the login tokens and returns the data
    * @param tokens The login tokens
    * @returns The decoded login token data
    */
   public static decode(tokens: LoginTokens): LoginTokenData {
-    // Contains data about the users client. (Device, game version, etc.)
-    const clientData: ClientData = this.decoder(tokens.client);
-
-    // Parse the identity data from the tokens
-    const identity: { AuthenticationType: number, Certificate: string } = JSON.parse(tokens.identity);
-
-    // Get the identity chain from the identity data
-    const chains: Array<string> = JSON.parse(identity.Certificate).chain;
-
-    // Decode the chains
-    const decodedChains = chains.map((chain) => this.decoder(chain));
-
-    // Contains mainly metadata, but also includes important XBL data (displayName, xuid, identity uuid, etc.)
-    const identityData: IdentityData = decodedChains.find(
-      (chain) => chain.extraData !== undefined
-    )?.extraData;
-
-    // Public key for encryption
-    // TODO: Implement encryption
-    const publicKey = decodedChains.find(
-      (chain) => chain.identityPublicKey !== undefined
-    )?.identityPublicKey;
-
+    //@ts-ignore
     return {
       clientData: Authentication.partialParse(
         Authentication.split(tokens.client)[1]
       ),
       identityData: null!,
-      publicKey: null!
-      clientData,
-      identityData,
-      publicKey,
-      authenticationType: identity.AuthenticationType
+      publicKey: null!,
     };
   }
 }
@@ -330,14 +188,11 @@ function uuidFromBytes(input: Uint8Array): string {
   const bytes = createHash("md5").update(input).digest();
   bytes[6] = (bytes[6]! & 0x0f) | 0x30; // version 3
   bytes[8] = (bytes[8]! & 0x3f) | 0x80; // RFC 4122 variant
-  return `${bytes.subarray(0, 4).toHex()}-${bytes.subarray(4, 6).toHex()}-${bytes.subarray(6, 8).toHex()}-${bytes.subarray(8, 10).toHex()}-${bytes.subarray(10, 16).toHex()}`;
-}
-
-function uuidFromBytes(input: Uint8Array): string {
-  const bytes = createHash("md5").update(input).digest();
-  bytes[6] = (bytes[6]! & 0x0f) | 0x30; // version 3
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80; // RFC 4122 variant
-  return `${bytes.subarray(0, 4).toHex()}-${bytes.subarray(4, 6).toHex()}-${bytes.subarray(6, 8).toHex()}-${bytes.subarray(8, 10).toHex()}-${bytes.subarray(10, 16).toHex()}`;
+  return `${bytes.subarray(0, 4).toHex()}-${bytes
+    .subarray(4, 6)
+    .toHex()}-${bytes.subarray(6, 8).toHex()}-${bytes
+    .subarray(8, 10)
+    .toHex()}-${bytes.subarray(10, 16).toHex()}`;
 }
 
 export { LoginHandler };

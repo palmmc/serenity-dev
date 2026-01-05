@@ -19,7 +19,7 @@ import {
   UpdateBlockFlagsType,
   UpdateBlockLayerType,
   UpdateBlockPacket,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 import { Connection } from "@serenityjs/raknet";
 
@@ -28,12 +28,12 @@ import {
   EntityGravityTrait,
   EntityMovementTrait,
   EntityRidingTrait,
-  Player
+  Player,
 } from "../entity";
 import {
   PlayerStartUsingItemSignal,
   PlayerStopUsingItemSignal,
-  PlayerUseItemSignal
+  PlayerUseItemSignal,
 } from "../events";
 import { TickSchedule } from "../world";
 
@@ -227,7 +227,7 @@ class PlayerAuthInputHandler extends NetworkHandler {
     const {
       movementValidation,
       movementHorizontalThreshold,
-      movementVerticalThreshold
+      movementVerticalThreshold,
     } = this.serenity.properties;
 
     // Check if the movement validation is disabled
@@ -422,11 +422,11 @@ class PlayerAuthInputHandler extends NetworkHandler {
             // Create an options object for the item use
             const options = {
               method: ItemUseMethod.UseTool,
-              canceled: false
+              canceled: false,
             };
 
             // Call the item onStartUse trait methods
-            for (const trait of player.itemTarget.traits.values()) {
+            for (const trait of player.itemTarget.getAllTraits()) {
               // Call the trait's onStartUse method
               const success = trait.onStartUse?.(player, options);
 
@@ -511,7 +511,9 @@ class PlayerAuthInputHandler extends NetworkHandler {
         // Log unimplemented actions
         default: {
           this.serenity.logger.debug(
-            `PlayerAuthInputHandler: Unimplemented block action: ${PlayerActionType[action.type]}`
+            `PlayerAuthInputHandler: Unimplemented block action: ${
+              PlayerActionType[action.type]
+            }`
           );
           break;
         }
@@ -639,7 +641,7 @@ class PlayerAuthInputHandler extends NetworkHandler {
                 // Attempt to break the block
                 const success = block.destroy({
                   origin: player,
-                  dropLoot: true
+                  dropLoot: true,
                 });
 
                 // Get the held item from the player
@@ -689,7 +691,7 @@ class PlayerAuthInputHandler extends NetworkHandler {
             ).emit();
 
             // Call the item onStartUse trait methods
-            for (const [, trait] of heldItem.traits) {
+            for (const trait of heldItem.getAllTraits()) {
               // Check if the start use was successful
               const success = trait.onStartUse?.(player, { method });
 
@@ -754,7 +756,7 @@ class PlayerAuthInputHandler extends NetworkHandler {
             new PlayerStopUsingItemSignal(player, player.itemTarget).emit();
 
             // Call the item onStopUse trait methods
-            for (const trait of player.itemTarget.traits.values())
+            for (const trait of player.itemTarget.getAllTraits())
               trait.onStopUse?.(player, { method: ItemUseMethod.UseTool });
 
             // Reset the players item use time
@@ -825,7 +827,7 @@ class PlayerAuthInputHandler extends NetworkHandler {
             // Break the block based on the signal drop loot flag
             const success = block.destroy({
               origin: player,
-              dropLoot: true
+              dropLoot: true,
             });
 
             // If the block was not destroyed, update the block

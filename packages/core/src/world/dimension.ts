@@ -12,7 +12,7 @@ import {
   UpdateBlockFlagsType,
   UpdateBlockLayerType,
   UpdateBlockPacket,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 
 import { BiomeType } from "../biome";
@@ -29,7 +29,7 @@ import {
   EntityType,
   EntityXpOrbTrait,
   Player,
-  PlayerChunkRenderingTrait
+  PlayerChunkRenderingTrait,
 } from "../entity";
 import { BlockIdentifier, EntityIdentifier } from "../enums";
 import { BlockPermutationUpdateSignal } from "../events";
@@ -41,7 +41,7 @@ import {
   EntityQueryOptions,
   RawMessage,
   RawText,
-  StructurePlaceOptions
+  StructurePlaceOptions,
 } from "../types";
 
 import { Chunk } from "./chunk";
@@ -56,7 +56,7 @@ const DefaultDimensionProperties: DimensionProperties = {
   generator: "void",
   viewDistance: 20,
   simulationDistance: 10,
-  spawnPosition: [0, 32767, 0]
+  spawnPosition: [0, 32767, 0],
 };
 
 class Dimension {
@@ -275,7 +275,7 @@ class Dimension {
             if (!item) continue;
 
             // Iterate over all the traits in the item
-            for (const [identifier, trait] of item.traits)
+            for (const trait of item.getAllTraits())
               try {
                 // Tick the item trait
                 trait.onTick?.({ currentTick, deltaTick });
@@ -286,22 +286,22 @@ class Dimension {
               } catch (reason) {
                 // Log the error to the console
                 this.world.logger.error(
-                  `Failed to tick item trait "${identifier}" for item "${item.type.identifier}" in dimension "${this.identifier}"`,
+                  `Failed to tick item trait "${trait.identifier}" for item "${item.type.identifier}" in dimension "${this.identifier}"`,
                   reason
                 );
 
                 // Remove the trait from the item
-                item.traits.delete(identifier);
+                item.removeTrait(trait.identifier);
               }
           }
         }
       } else if (entity.isTicking) {
         // If the entity is not in simulation range, stop ticking it
+        entity.isTicking = false;
         if (entity.hasTrait("persistence")) {
           //@ts-ignore
           entity.getTrait("persistence").despawn();
-        }
-        else entity.isTicking = false;
+        } else entity.isTicking = false;
       }
     }
 
@@ -811,7 +811,9 @@ class Dimension {
     const chunk = options?.chunk ?? null;
 
     const filteredEntities = options?.filterEntityId
-      ? this.entities.values().filter((entity) => entity.identifier === options?.filterEntityId)
+      ? this.entities
+          .values()
+          .filter((entity) => entity.identifier === options?.filterEntityId)
       : this.entities.values();
 
     // Filter the entities based on the options
@@ -1227,4 +1229,3 @@ class Dimension {
 }
 
 export { DefaultDimensionProperties, Dimension };
-

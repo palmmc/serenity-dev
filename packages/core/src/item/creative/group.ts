@@ -1,7 +1,7 @@
 import { CREATIVE_GROUPS, CREATIVE_CONTENT } from "@serenityjs/data";
 import {
   CreativeItemCategory,
-  NetworkItemInstanceDescriptor
+  NetworkItemInstanceDescriptor,
 } from "@serenityjs/protocol";
 import { BinaryStream } from "@serenityjs/binarystream";
 
@@ -14,7 +14,7 @@ import { CreativeItemDescriptor } from "./descriptor";
 const DefaultCreativeGroupProperties: Partial<CreateContentGroup> = {
   identifier: "",
   category: CreativeItemCategory.All,
-  icon: ItemType.get(ItemIdentifier.Air)!
+  icon: ItemType.get(ItemIdentifier.Air)!,
 };
 
 class CreateContentGroup {
@@ -38,7 +38,7 @@ class CreateContentGroup {
       const instance = new this({
         identifier: name,
         category,
-        icon
+        icon,
       });
 
       // Get the index of the creative group.
@@ -129,7 +129,7 @@ class CreateContentGroup {
       const instance = new CreativeItemDescriptor(
         type.type,
         descriptor ?? ItemStack.toNetworkInstance(type),
-        type.getLevelStorage()
+        type.getStorage()
       );
 
       // Register the item to the creative group.

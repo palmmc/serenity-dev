@@ -138,65 +138,70 @@ class Container {
    * @returns Whether the item was successfully added into the container.
    */
   public addItem(item: ItemStack): boolean {
-    let amount = item.stackSize;
-    // Non-stackable logic.
-    if (!item.isStackable) {
-      const emptySlot = this.storage.indexOf(null);
-      if (emptySlot > -1) {
-        this.setItem(emptySlot, item);
-        // Item was fully transferred already.
-        amount = 0;
-        return true;
-      }
-      // No empty slot was found.
-      return false;
-    }
+    // Find a slot that has the same item type and isn't full (x64)
+    // If there is no slot, find the next empty slot.
+    const slot = this.storage.findIndex((slot) => {
+      // Check if the slot is null.
+      if (!slot) return false;
 
-    // Loop as long as there are items left in the stack to be added.
-    while (amount > 0) {
-      const existingSlotIndex = this.storage.findIndex(
-        (slot) =>
-          slot && slot.getStackSize() < slot.maxStackSize && item.equals(slot)
+      // Check if the item can be stacked.
+      if (slot.getStackSize() >= item.maxStackSize) return false;
+
+      // Check if the item is equal to the slot.
+      return item.equals(slot);
+    });
+
+    // Check if the item is maxed.
+    const maxed = item.getStackSize() >= item.maxStackSize;
+
+    // Check if exists an available slot
+    if (slot > -1 && !maxed && item.isStackable) {
+      // Get the item if slot available
+      const existingItem = this.storage[slot] as ItemStack;
+
+      // Calculate the amount of items to add.
+      const amount = Math.min(
+        item.maxStackSize - existingItem.getStackSize(),
+        item.getStackSize()
       );
 
-      // If a suitable stack is found, add to it.
-      if (existingSlotIndex > -1) {
-        const existingItem = this.storage[existingSlotIndex] as ItemStack;
+      // Add the amount to the existing item.
+      existingItem.incrementStack(amount);
 
-        // Calculate how many items we can add to this stack.
-        const amountToAdd = Math.min(
-          existingItem.maxStackSize - existingItem.stackSize,
-          amount
-        );
+      // Subtract the amount from the item.
+      item.decrementStack(amount);
 
-        existingItem.incrementStack(amountToAdd);
-        amount -= amountToAdd;
+      // Return true as the item was successfully added.
+      return true;
+    } else {
+      // Find the next empty slot.
+      const emptySlot = this.storage.indexOf(null);
 
-        continue;
+      // Check if there is an empty slot, if not return false.
+      if (emptySlot === -1) return false;
+
+      // Check if the item is maxed.
+      if (item.getStackSize() > item.maxStackSize) {
+        // Create a full stack item for the empty slot
+        const newItem = new ItemStack(item.type, {
+          ...item,
+          stackSize: item.maxStackSize,
+        });
+
+        // Add the new Item and decrease it
+        this.setItem(emptySlot, newItem);
+        item.decrementStack(item.maxStackSize);
+
+        // Because it is greater than 64 call the function to add the remaining items
+        return this.addItem(item);
       }
 
-      // If no stack was found, find the next empty slot.
-      const emptySlotIndex = this.storage.indexOf(null);
+      // Set the item in the empty slot.
+      this.setItem(emptySlot, item);
 
-      // If there's an empty slot, put items there.
-      if (emptySlotIndex > -1) {
-        // Determine how many items to put in the new stack.
-        const amountToSet = Math.min(item.maxStackSize, amount);
-
-        item.stackSize = amountToSet;
-
-        this.setItem(emptySlotIndex, item);
-        amount -= amountToSet;
-
-        continue;
-      }
-
-      // Inventory is full.
-      break;
+      // Return true as the item was successfully added.
+      return true;
     }
-
-    // Whether or not all the items were successfully added.
-    return amount === 0;
   }
 
   /**
@@ -213,13 +218,13 @@ class Container {
     if (!item) return null;
 
     // Calculate the amount of items to remove.
-    const removed = Math.min(amount, item.stackSize);
+    const removed = Math.min(amount, item.getStackSize());
 
     // Subtract the amount from the item.
     item.decrementStack(removed);
 
     // Check if the item amount is 0.
-    if (item.stackSize === 0) this.storage[slot] = null;
+    if (item.getStackSize() === 0) this.storage[slot] = null;
 
     // Return the removed item.
     return item;
@@ -249,11 +254,11 @@ class Container {
     }
 
     // Calculate the amount of items to remove.
-    const removed = Math.min(amount, item.stackSize);
+    const removed = Math.min(amount, item.getStackSize());
     item.decrementStack(removed);
 
     // Check if the item amount is 0.
-    if (item.stackSize === 0) this.clearSlot(slot);
+    if (item.getStackSize() === 0) this.clearSlot(slot);
 
     // Create a new item with the removed amount.
     const newItem = new ItemStack(item.type, {
@@ -263,18 +268,18 @@ class Container {
     });
 
     // Clone the dynamic properties of the item to the new item.
-    for (const [key, value] of item.dynamicProperties)
-      newItem.dynamicProperties.set(key, value);
+    for (const [key, value] of item.getStorage().getAllDynamicProperties())
+      newItem.getStorage().setDynamicProperty(key, value);
 
     // Clone the traits of the item to the new item.
-    for (const trait of item.traits.values())
+    for (const trait of item.getAllTraits())
       newItem.addTrait(trait.clone(newItem));
 
     // Update the slot for all occupants.
     this.updateSlot(slot);
 
     // Clone the NBT tags of the item.
-    for (const tag of item.nbt.values()) {
+    for (const tag of item.getStorage().getStackNbt().values()) {
       newItem.nbt.add(tag);
     }
 
@@ -423,7 +428,7 @@ class Container {
       if (!item) continue;
 
       // Iterate over the traits of the item and call the onContainerOpen method.
-      for (const trait of item.traits.values()) trait.onContainerOpen?.(player);
+      for (const trait of item.getAllTraits()) trait.onContainerOpen?.(player);
     }
 
     // Return the container identifier assigned to the player.
@@ -464,35 +469,8 @@ class Container {
       if (!item) continue;
 
       // Iterate over the traits of the item and call the onContainerClose method.
-      for (const trait of item.traits.values())
-        trait.onContainerClose?.(player);
+      for (const trait of item.getAllTraits()) trait.onContainerClose?.(player);
     }
-  }
-
-  /**
-   * The next container identifier.
-   */
-  private static nextContainerId = ContainerId.First;
-
-  /**
-   * Gets the next container identifier.
-   * @returns The next container identifier.
-   */
-  public static getNextContainerId(): ContainerId {
-    // Increment the current container id
-    let id = Container.nextContainerId++;
-
-    // Wrap around if exceeds the last container id
-    if (id > ContainerId.Last) {
-      // Assign the next container id to the first container id
-      Container.nextContainerId = ContainerId.First;
-
-      // Increment the id to return
-      id = Container.nextContainerId;
-    }
-
-    // Return the id
-    return id;
   }
 
   /**

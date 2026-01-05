@@ -3,7 +3,6 @@ import { Connection } from "@serenityjs/raknet";
 
 import { NetworkHandler } from "../network";
 import { PlayerLeaveSignal } from "../events";
-import { PlayerListTrait } from "../entity";
 
 class DisconnectHandler extends NetworkHandler {
   public static readonly packet = Packet.Disconnect;

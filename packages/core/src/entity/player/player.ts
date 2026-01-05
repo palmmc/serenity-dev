@@ -33,7 +33,7 @@ import {
   TransferPacket,
   UpdateAbilitiesPacket,
   UpdatePlayerGameTypePacket,
-  Vector3f
+  Vector3f,
 } from "@serenityjs/protocol";
 import { IntTag } from "@serenityjs/nbt";
 
@@ -42,7 +42,7 @@ import {
   PlayerProperties,
   PlaySoundOptions,
   RawMessage,
-  RawText
+  RawText,
 } from "../../types";
 import { Dimension } from "../../world";
 import { EntityIdentifier } from "../../enums";
@@ -50,11 +50,11 @@ import { Container } from "../../container";
 import {
   ItemStackBundleTrait,
   ItemStack,
-  ItemTypeCooldownComponent
+  ItemTypeCooldownComponent,
 } from "../../item";
 import {
   EntityDimensionChangeSignal,
-  PlayerGamemodeChangeSignal
+  PlayerGamemodeChangeSignal,
 } from "../../events";
 import { FormParticipant } from "../../ui";
 import { PermissionMember } from "../../permissions";
@@ -68,7 +68,7 @@ import {
   PlayerCursorTrait,
   PlayerTrait,
   PlayerLevelingTrait,
-  PlayerCraftingOutputTrait
+  PlayerCraftingOutputTrait,
 } from "../traits";
 import { PlayerLevelStorage } from "../storage";
 import { PlayerSkin } from "../skin";
@@ -167,10 +167,9 @@ class Player extends Entity {
   public entityTarget: Entity | null = null;
 
   /**
- * The current additional mining speed multiplier of the player.
- */
+   * The current additional mining speed multiplier of the player.
+   */
   public miningSpeed: number = 1;
-
 
   /**
    * Whether the player has operator permissions.
@@ -300,22 +299,21 @@ class Player extends Entity {
   }
 
   /**
-  * Updates world gamerules for player.
-  */
+   * Updates world gamerules for player.
+   */
   public updateGamerules(): void {
     const world = this.world;
 
     // Create a new GamerulesChangedPacket.
     const packet = new GameRulesChangedPacket();
     packet.rules = Object.entries(world.properties.gamerules).map(
-      ([rule, val]) => (new GameRules(
-        true,
-        rule,
-        typeof val === "boolean"
-          ? GameRuleType.Bool
-          : GameRuleType.Int,
-        val
-      ))
+      ([rule, val]) =>
+        new GameRules(
+          true,
+          rule,
+          typeof val === "boolean" ? GameRuleType.Bool : GameRuleType.Int,
+          val
+        )
     );
 
     // Broadcast the packet to all players

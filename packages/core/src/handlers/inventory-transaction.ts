@@ -15,7 +15,7 @@ import {
   PredictedResult,
   UpdateBlockFlagsType,
   UpdateBlockLayerType,
-  UpdateBlockPacket
+  UpdateBlockPacket,
 } from "@serenityjs/protocol";
 import { Connection } from "@serenityjs/raknet";
 import { CompoundTag } from "@serenityjs/nbt";
@@ -90,7 +90,7 @@ class InventoryTransactionHandler extends NetworkHandler {
         // Check if the player is using an item
         if (player.itemTarget)
           // Call the onRelease method for the item stack traits
-          for (const trait of player.itemTarget.traits.values())
+          for (const trait of player.itemTarget.getAllTraits())
             trait.onRelease?.(player);
 
         // Set the player's item target to null
@@ -111,7 +111,9 @@ class InventoryTransactionHandler extends NetworkHandler {
         default: {
           // Debug log the unimplemented source type
           this.serenity.logger.debug(
-            `InventoryTransactionHandler: Unimplemented inventory source type: ${InventorySourceType[action.source.type]}`
+            `InventoryTransactionHandler: Unimplemented inventory source type: ${
+              InventorySourceType[action.source.type]
+            }`
           );
           break;
         }
@@ -203,13 +205,13 @@ class InventoryTransactionHandler extends NetworkHandler {
           origin: player,
           clickedPosition: transaction.clickPosition,
           clickedFace: transaction.face,
-          placingBlock
+          placingBlock,
         });
 
         // Check if the interaction was canceled and the player is placing a block
         if (results.cancel || player.openedContainer) {
           // Update the item stack to reflect the interaction
-          if (stack) stack.update();
+          if (stack) stack.container?.updateSlot(stack.getSlot());
 
           // Create a new UpdateBlockPacket to revert the block state
           const packet = new UpdateBlockPacket();
@@ -235,7 +237,7 @@ class InventoryTransactionHandler extends NetworkHandler {
             method: ItemUseMethod.Interact,
             targetBlock: interacting,
             clickPosition: transaction.clickPosition,
-            face: transaction.face
+            face: transaction.face,
           });
         } else {
           // Get the item stack from the player & the previous block permutation
@@ -258,7 +260,7 @@ class InventoryTransactionHandler extends NetworkHandler {
             targetBlock: interacting,
             clickPosition: transaction.clickPosition,
             face: transaction.face,
-            placingBlock: blockType
+            placingBlock: blockType,
           };
 
           // Call the useOnBlock method for the item stack
@@ -272,17 +274,18 @@ class InventoryTransactionHandler extends NetworkHandler {
             // Increment the stack count
             return stack.incrementStack();
           }
+          // Check if the player is in survival mode
+          // If so, decrement the stack
+          else if (player.getGamemode() === Gamemode.Survival)
+            stack.decrementStack();
 
           // Check if the block type exists and is not air
-          if (useOptions.placingBlock.identifier === BlockIdentifier.Air) {
-            if (player.getGamemode() === Gamemode.Survival)
-              stack.decrementStack();
+          if (useOptions.placingBlock.identifier === BlockIdentifier.Air)
             return; // If so, we skip the block placement
-          }
 
           // Get the permutation to set the block state
           const permutation =
-            useOptions.placingBlock.permutations[stack.metadata] ??
+            useOptions.placingBlock.permutations[stack.getAuxiliaryValue()] ??
             useOptions.placingBlock.getPermutation();
 
           // Create a new BlockPlacementOptions object
@@ -291,7 +294,7 @@ class InventoryTransactionHandler extends NetworkHandler {
             permutation,
             origin: player,
             clickedPosition: transaction.clickPosition,
-            clickedFace: transaction.face
+            clickedFace: transaction.face,
           };
 
           // Create a new PlayerPlaceBlockSignal
@@ -347,12 +350,12 @@ class InventoryTransactionHandler extends NetworkHandler {
 
           // Check if the block placement was canceled, revert the block
           if (options.cancel) {
+            // Increment the item stack
+            stack.incrementStack();
+
             // Revert the block to its previous state
             return resultant.setPermutation(previousPermutation);
-          }
-          if (player.getGamemode() === Gamemode.Survival)
-            stack.decrementStack();
-          return resultant.dimension.broadcast(sound); // If not, broadcast the sound
+          } else return resultant.dimension.broadcast(sound); // If not, broadcast the sound
         }
       }
 
@@ -434,7 +437,7 @@ class InventoryTransactionHandler extends NetworkHandler {
       // Call the useOnEntity method for the item stack
       return void stack.useOnEntity(player, {
         method,
-        targetEntity: entity
+        targetEntity: entity,
       });
     }
   }
