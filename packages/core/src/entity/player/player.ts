@@ -11,6 +11,9 @@ import {
   DisconnectReason,
   FullContainerName,
   Gamemode,
+  GameRules,
+  GameRulesChangedPacket,
+  GameRuleType,
   IPosition,
   MoveMode,
   MovePlayerPacket,
@@ -293,6 +296,28 @@ class Player extends Entity {
 
     // Despawn the player from the world
     this.despawn({ disconnected: true, hasDied: false });
+  }
+
+  /**
+   * Updates world gamerules for player.
+   */
+  public updateGamerules(): void {
+    const world = this.world;
+
+    // Create a new GamerulesChangedPacket.
+    const packet = new GameRulesChangedPacket();
+    packet.rules = Object.entries(world.properties.gamerules).map(
+      ([rule, val]) =>
+        new GameRules(
+          true,
+          rule,
+          typeof val === "boolean" ? GameRuleType.Bool : GameRuleType.Int,
+          val
+        )
+    );
+
+    // Broadcast the packet to all players
+    this.send(packet);
   }
 
   /**
