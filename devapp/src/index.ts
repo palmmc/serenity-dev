@@ -14,7 +14,7 @@ const serenity = new Serenity({
 new Pipeline(serenity, { path: "./plugins" });
 
 // Register the LevelDBProvider
-serenity.registerProvider(LevelDBProvider, { path: "./worlds" });
+//serenity.registerProvider(LevelDBProvider, { path: "./worlds" });
 
 // Start the server
 serenity.start();
