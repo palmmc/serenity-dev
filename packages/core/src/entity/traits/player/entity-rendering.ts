@@ -170,6 +170,20 @@ class PlayerEntityRenderingTrait extends PlayerTrait {
       return;
     }
 
+    // If entity is a slapper.
+    if (entity.hasTrait("slapper")) {
+      const trait = entity.traits.get("slapper");
+      //@ts-ignore
+      trait.sendPacketData(this.player);
+      return;
+    }
+    else if (entity.hasTrait("client-render")) {
+      const trait = entity.traits.get("client-render");
+      //@ts-ignore
+      trait.sendPacketData(this.player);
+      return;
+    }
+
     // Adjust the entity's position
     const position = new Vector3f(
       entity.position.x,
