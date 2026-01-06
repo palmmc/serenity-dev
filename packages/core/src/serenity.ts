@@ -386,8 +386,11 @@ class Serenity extends Emitter<WorldEventSignals & ServerEvents> {
       // Get the default world from the serenity instance
       const world = this.getWorld(); // Default world
 
+      const storage = player.getStorage();
+      storage.setPosition(world.getDimension().spawnPosition);
+
       // Write the player's data to the storage
-      world.provider.writePlayer(player.uuid, player.getStorage());
+      world.provider.writePlayer(player.uuid, storage);
 
       // Disconnect the player from the server
       player.disconnect(
