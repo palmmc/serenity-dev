@@ -15,3 +15,5 @@ export * from "./invisibility";
 export * from "./water-breathing";
 export * from "./slow-falling";
 export * from "./levitation";
+
+export * from "./haste";

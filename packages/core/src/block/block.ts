@@ -46,6 +46,7 @@ import {
 } from "./identity";
 import { BlockLevelStorage } from "./storage";
 import { BlockState } from "./types";
+import { Player, PlayerHungerTrait } from "../entity";
 
 /**
  * Block is a class the represents an instance of a block in a dimension of a world.
@@ -296,7 +297,7 @@ class Block {
       // If the trait does not exist, log an error and skip it.
       if (!traitType) {
         // Log a warning to the console.
-        this.world.logger.warn(
+        this.world.logger.debug(
           `Skipping BlockTrait for block §u${this.identifier}§r @ §7(§u${x}§7, §u${y}§7, §u${z}§7)§r, as the trait §u${identifier}§r does not exist in the block palette.`
         );
 
@@ -1004,6 +1005,10 @@ class Block {
       // Create a new PlayerBreakBlockSignal
       const signal = new PlayerBreakBlockSignal(this, options.origin);
 
+      // Handle exhaustion.
+      const hunger = options.origin.getTrait(PlayerHungerTrait);
+      if (hunger) hunger.exhaustion += 0.025;
+
       // Emit the signal to the server
       options.cancel = !signal.emit();
 
@@ -1106,7 +1111,7 @@ class Block {
    * @param itemStack The item stack used to break the block.
    * @returns The time it takes to break the block.
    */
-  public getBreakTime(itemStack?: ItemStack | null): number {
+  public getBreakTime(itemStack?: ItemStack | null, player?: Player): number {
     // Determine the base hardness & efficiency of the block.
     let hardness = this.getHardness();
     let efficiency = 1;
@@ -1219,6 +1224,9 @@ class Block {
           efficiency *= enchantable.getEnchantment(Enchantment.Efficiency) ?? 1;
         }
       }
+
+      // Apply player mining speed multiplier, used by effects like haste.
+      if (player) efficiency *= player.miningSpeed;
 
       // Check if no efficiency was applied, and if the block has requirements.
       if (efficiency === 1) {
