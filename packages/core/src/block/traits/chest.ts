@@ -181,8 +181,8 @@ class BlockChestTrait extends BlockInventoryTrait {
     super.onBreak(options);
   }
 
-  public onInteract({ cancel, origin }: BlockInteractionOptions): void {
-    if (cancel || !origin) return;
+  public onInteract({ cancel, origin }: BlockInteractionOptions): boolean {
+    if (cancel || !origin) return false;
 
     if (
       this.isPaired() &&
@@ -206,6 +206,7 @@ class BlockChestTrait extends BlockInventoryTrait {
     } else {
       super.onInteract({ cancel, origin });
     }
+    return false;
   }
 
   public onOpen(silent?: boolean): void {
