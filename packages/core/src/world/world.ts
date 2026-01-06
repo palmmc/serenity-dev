@@ -411,16 +411,19 @@ class World extends Emitter<WorldEventSignals> {
   /**
  * Sets a gamerule value.
  */
-  public setGamerule(gamerule: GameRule, value: boolean | number): void {
-    // Update the gamerule value
-    this.properties.gamerules[gamerule] = value;
-    // Update the gamerules for entities in the world
-    this.updateGamerules();
-  }
+  /*
+    public setGamerule(gamerule: GameRule, value: boolean | number): void {
+      // Update the gamerule value
+      this.properties.gamerules[gamerule] = value;
+      // Update the gamerules for entities in the world
+      this.updateGamerules();
+    }
+      */
 
   /**
    * Updates gamerules for entities in the world.
    */
+  /*
   public updateGamerules(): void {
     // Create a new GamerulesChangedPacket.
     const packet = new GameRulesChangedPacket();
@@ -437,6 +440,7 @@ class World extends Emitter<WorldEventSignals> {
     // Broadcast the packet to all players
     this.broadcast(packet);
   }
+  */
 
   /**
    * Sets the current time of day for the world.

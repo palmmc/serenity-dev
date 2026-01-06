@@ -301,6 +301,7 @@ class Player extends Entity {
   /**
    * Updates world gamerules for player.
    */
+  /*
   public updateGamerules(): void {
     const world = this.world;
 
@@ -316,9 +317,10 @@ class Player extends Entity {
         )
     );
 
-    // Broadcast the packet to all players
+    // Broadcast the packet to player.
     this.send(packet);
   }
+    */
 
   /**
    * Get the current gamemode of the player.
