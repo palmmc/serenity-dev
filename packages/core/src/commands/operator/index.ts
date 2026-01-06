@@ -16,7 +16,6 @@ import WORLD from "./world";
 import OP from "./op";
 import DEOP from "./deop";
 import SAVE from "./save";
-import TIME from "./time";
 import ENTITYTRAITS from "./entity-traits";
 import SPAWNPOINT from "./spawnpoint";
 import ENCHANT from "./enchant";
@@ -44,7 +43,6 @@ const OperatorCommands = [
   OP,
   DEOP,
   SAVE,
-  TIME,
   ENTITYTRAITS,
   SPAWNPOINT,
   ENCHANT,

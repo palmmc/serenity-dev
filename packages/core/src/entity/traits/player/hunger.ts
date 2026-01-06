@@ -80,13 +80,13 @@ class PlayerHungerTrait extends EntityAttributeTrait {
     // Check if the player is not exhausted and the current tick is divisible by 30
     if (this.currentValue > 17 && currentTick % 30n === 0n) {
       // Check if the health is less than the maximum value
-      if (health.currentValue < 20) {
+      if (health?.currentValue < 20) {
         // Increase the health value
         health.currentValue++;
       }
     } else if (this.currentValue === 0 && currentTick % 30n === 0n) {
       // Apply damage to the player
-      health.applyDamage(1, this.player, ActorDamageCause.Starve);
+      health?.applyDamage(1, this.player, ActorDamageCause.Starve);
     }
   }
 
