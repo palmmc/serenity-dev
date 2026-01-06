@@ -14,12 +14,12 @@ class BlockOpenBitTrait extends BlockTrait {
   public static readonly identifier = "open-bit";
   public static readonly state = "open_bit";
 
-  public onInteract({ origin, cancel }: BlockInteractionOptions): void {
+  public onInteract({ origin, cancel }: BlockInteractionOptions): boolean {
     // Check if the origin is a player
-    if (!origin || !origin.isPlayer()) return;
+    if (!origin || !origin.isPlayer()) return false;
 
     // Check if the block is a barrel
-    if (this.block.type.identifier === BlockIdentifier.Barrel) return;
+    if (this.block.type.identifier === BlockIdentifier.Barrel) return false;
 
     // Check if the interaction has been cancelled
     if (cancel || !origin.abilities.getAbility(AbilityIndex.DoorsAndSwitches)) {
@@ -27,7 +27,8 @@ class BlockOpenBitTrait extends BlockTrait {
       const state = this.block.getState<boolean>("open_bit");
 
       // Revert the state of the block
-      return this.setBit(state, true);
+      this.setBit(state, true);
+      return false;
     }
 
     // Get the state of the block
@@ -35,6 +36,7 @@ class BlockOpenBitTrait extends BlockTrait {
 
     // Set the bit of the block
     this.setBit(!state);
+    return true;
   }
 
   public setBit(open: boolean, silent = false): void {
