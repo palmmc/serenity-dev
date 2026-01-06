@@ -13,7 +13,6 @@ import {
   EntitySpawnOptions
 } from "../../../types";
 import { ItemStackDurabilityTrait } from "../../../item";
-import { PlayerHungerTrait } from "../player";
 
 import { EntityAttributeTrait } from "./attribute";
 import { EntityEquipmentTrait } from "../equipment";
@@ -68,15 +67,6 @@ class EntityHealthTrait extends EntityAttributeTrait {
           durabilityTrait.processDamage(this.entity);
         }
       }
-    }
-
-    // Check if the entity has a PlayerHungerTrait
-    if (damager?.hasTrait(PlayerHungerTrait)) {
-      // Get the PlayerHungerTrait
-      const hunger = damager.getTrait(PlayerHungerTrait);
-
-      // Increase the exhaustion of the player
-      hunger.exhaustion += 0.1;
     }
 
     // Check if the health is less than or equal to 0
