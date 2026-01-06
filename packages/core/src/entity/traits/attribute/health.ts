@@ -7,17 +7,17 @@ import {
 
 import { EntityIdentifier } from "../../../enums";
 import { EntityHurtSignal } from "../../../events";
-import { ItemStackDurabilityTrait } from "../../../item";
 import {
   EntityDeathOptions,
   EntityDespawnOptions,
   EntitySpawnOptions
 } from "../../../types";
-import { Entity } from "../../entity";
-import { EntityEquipmentTrait } from "../equipment";
+import { ItemStackDurabilityTrait } from "../../../item";
 import { PlayerHungerTrait } from "../player";
 
 import { EntityAttributeTrait } from "./attribute";
+import { EntityEquipmentTrait } from "../equipment";
+import { Entity } from "../../entity";
 
 class EntityHealthTrait extends EntityAttributeTrait {
   public static readonly identifier = "health";
@@ -71,11 +71,12 @@ class EntityHealthTrait extends EntityAttributeTrait {
     }
 
     // Check if the entity has a PlayerHungerTrait
-    if (this.entity.hasTrait(PlayerHungerTrait)) {
-      const hungerTrait = this.entity.getTrait(PlayerHungerTrait);
+    if (damager?.hasTrait(PlayerHungerTrait)) {
+      // Get the PlayerHungerTrait
+      const hunger = damager.getTrait(PlayerHungerTrait);
 
-      // Increase the exhaustion
-      hungerTrait.exhaustion += 0.1;
+      // Increase the exhaustion of the player
+      hunger.exhaustion += 0.1;
     }
 
     // Check if the health is less than or equal to 0
