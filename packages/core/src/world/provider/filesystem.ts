@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 
 import { BinaryStream } from "@serenityjs/binarystream";
-import { CompoundTag, ListTag, LongTag } from "@serenityjs/nbt";
+import { ByteTag, CompoundTag, ListTag, LongTag } from "@serenityjs/nbt";
 
 import { Serenity } from "../../serenity";
 import { WorldProviderProperties } from "../../types";
@@ -82,6 +82,8 @@ class FileSystemProvider extends WorldProvider {
       this.world.logger.info(
         `Successfully pre-generated §u${chunkCount}§r chunks for dimension §u${dimension.identifier}§r which contains §u${entityCount}§r entities and §u${blockCount}§r blocks.`
       );
+      // Set the dimension as loaded.
+      dimension.isLoaded = true;
     }
   }
 
@@ -320,6 +322,11 @@ class FileSystemProvider extends WorldProvider {
       `${chunk.x}.${chunk.z}.nbt`
     );
 
+    // Filter out non-persistent entities.
+    entities = entities.filter(
+      ([, tag]) => tag.get<ByteTag>("Persistent")?.valueOf() !== 0
+    );
+
     // Check if there are no entities to write.
     if (entities.length === 0 && !existsSync(entitiesPath)) return;
     else if (entities.length === 0 && existsSync(entitiesPath)) {
@@ -395,28 +402,27 @@ class FileSystemProvider extends WorldProvider {
 
     // Check if there are no blocks to write.
     if (blocks.length === 0 && !existsSync(blocksPath)) return;
-    else if (blocks.length === 0 && existsSync(blocksPath)) {
+    else if (existsSync(blocksPath)) {
       // Delete the blocks file if it exists and there are no blocks.
       rmSync(blocksPath, { force: true });
-    } else {
-      // Create a new list tag for the blocks.
-      const list = new ListTag<CompoundTag>(blocks);
-
-      // Create a new binary stream to write the blocks.
-      const stream = new BinaryStream();
-
-      // Create a new compound tag to hold the blocks.
-      const root = new CompoundTag();
-
-      // Add the blocks list to the root compound tag.
-      root.set("blocks", list);
-
-      // Write the root compound tag to the stream.
-      CompoundTag.write(stream, root);
-
-      // Write the blocks to the file.
-      writeFileSync(blocksPath, stream.getBuffer());
     }
+    // Create a new list tag for the blocks.
+    const list = new ListTag<CompoundTag>(blocks);
+
+    // Create a new binary stream to write the blocks.
+    const stream = new BinaryStream();
+
+    // Create a new compound tag to hold the blocks.
+    const root = new CompoundTag();
+
+    // Add the blocks list to the root compound tag.
+    root.set("blocks", list);
+
+    // Write the root compound tag to the stream.
+    CompoundTag.write(stream, root);
+
+    // Write the blocks to the file.
+    writeFileSync(blocksPath, stream.getBuffer());
   }
 
   public static async initialize(
@@ -448,6 +454,8 @@ class FileSystemProvider extends WorldProvider {
 
     // Iterate through all the directories in the world directory.
     for (const directory of directories) {
+      if (directory.name.startsWith("sb_")) continue;
+
       // Get the path for the world.
       const worldPath = resolve(path, directory.name);
 
@@ -643,127 +651,60 @@ class FileSystemProvider extends WorldProvider {
     return world;
   }
 
-  public static async loadFromExistingPath(
+  /**
+   * Loads a world from file into the serenity instance.
+   * @param serenity Serenity instance.
+   * @param worldId Identifier of the world.
+   * @returns
+   */
+  public static async loadWorld(
     serenity: Serenity,
-    path: string
-  ): Promise<World> {
-    // Resolve the path for the world directory.
-    path = resolve(path);
+    worldId: string
+  ): Promise<World | null> {
+    // Resolve the path for the worlds directory.
+    const path = resolve("./islands");
 
     // Check if the path provided exists.
-    // If it does not exist, throw an error.
-    if (!existsSync(path))
-      throw new Error(
-        `World directory at path ${path} does not exist, try creating it instead.`
-      );
+    // If it does not exist, create the directory.
+    if (!existsSync(path)) mkdirSync(path);
+
+    // Get the path for the world.
+    const worldPath = resolve(path, worldId);
 
     // Get the world properties.
-    let worldProperties: Partial<WorldProperties> = {};
-    if (existsSync(resolve(path, "properties.json"))) {
+    let properties: Partial<WorldProperties> = { identifier: worldId };
+    if (existsSync(resolve(worldPath, "properties.json"))) {
       // Read the properties of the world.
-      worldProperties = JSON.parse(
-        readFileSync(resolve(path, "properties.json"), "utf-8")
+      properties = JSON.parse(
+        readFileSync(resolve(worldPath, "properties.json"), "utf-8")
       );
     }
 
-    // Check if a world identifier was provided.
-    if (!worldProperties.identifier)
-      throw new Error(
-        `World at path ${path} does not have a valid identifier in its properties file.`
-      );
+    // Check if the world directory contains a dimensions directory.
+    if (!existsSync(resolve(worldPath, "dimensions")))
+      // Create the dimensions directory if it does not exist.
+      mkdirSync(resolve(worldPath, "dimensions"));
 
     // Create a new world instance.
-    const world = new World(serenity, new this(path), worldProperties);
-
-    // Check if the world directory contains a dimensions directory.
-    if (!existsSync(resolve(path, "dimensions")))
-      // Create the dimensions directory if it does not exist.
-      mkdirSync(resolve(path, "dimensions"));
-
-    // Check if the world directory contains a players directory.
-    if (!existsSync(resolve(path, "players")))
-      // Create the players directory if it does not exist.
-      mkdirSync(resolve(path, "players"));
-
-    // Check if the world directory contains a structures directory.
-    if (!existsSync(resolve(path, "structures")))
-      // Create the structures directory if it does not exist.
-      mkdirSync(resolve(path, "structures"));
-
-    // Iterate through all the dimensions in the world directory.
-    for (const [identifier] of world.dimensions) {
-      const dimensionPath = resolve(path, "dimensions", identifier);
-
-      // Check if the dimension directory exists.
-      if (!existsSync(dimensionPath))
-        // Create the dimension directory if it does not exist.
-        mkdirSync(dimensionPath);
-
-      // Check if the dimension directory contains a chunks directory.
-      if (!existsSync(resolve(dimensionPath, "chunks")))
-        // Create the chunks directory if it does not exist.
-        mkdirSync(resolve(dimensionPath, "chunks"));
-
-      // Check if the dimension directory contains an entities directory.
-      if (!existsSync(resolve(dimensionPath, "entities")))
-        // Create the entities directory if it does not exist.
-        mkdirSync(resolve(dimensionPath, "entities"));
-
-      // Check if the dimension directory contains a blocks directory.
-      if (!existsSync(resolve(dimensionPath, "blocks")))
-        // Create the blocks directory if it does not exist.
-        mkdirSync(resolve(dimensionPath, "blocks"));
+    let world: World | null = null;
+    try {
+      world = new World(serenity, new this(worldPath), properties);
+    } catch (e) {
+      serenity.logger.error("Failed to load world", worldId, e);
+      return null;
     }
-    // Create a new WorldInitializedSignal instance.
-    new WorldInitializeSignal(world).emit();
 
-    // Return the created world instance.
-    return world;
-  }
+    if (!world) return null;
 
-  public static async createFromGivenPath(
-    serenity: Serenity,
-    path: string,
-    worldProperties?: Partial<WorldProperties>
-  ): Promise<World> {
-    // Resolve the path for the world directory.
-    path = resolve(path);
-
-    // Check if the path provided exists.
-    // If it does exist, throw an error.
-    if (existsSync(path))
-      throw new Error(
-        `World directory at path ${path} already exists, try loading it instead.`
-      );
-
-    // Check if a world identifier was provided.
-    if (!worldProperties?.identifier)
-      throw new Error("A world identifier is required to create a new world.");
-
-    // Create the world directory.
-    mkdirSync(path, { recursive: true });
-
-    // Create a new world instance.
-    const world = new World(serenity, new this(path), worldProperties);
-
-    // Check if the world directory contains a dimensions directory.
-    if (!existsSync(resolve(path, "dimensions")))
-      // Create the dimensions directory if it does not exist.
-      mkdirSync(resolve(path, "dimensions"));
-
-    // Check if the world directory contains a players directory.
-    if (!existsSync(resolve(path, "players")))
-      // Create the players directory if it does not exist.
-      mkdirSync(resolve(path, "players"));
-
-    // Check if the world directory contains a structures directory.
-    if (!existsSync(resolve(path, "structures")))
-      // Create the structures directory if it does not exist.
-      mkdirSync(resolve(path, "structures"));
+    if (world.identifier === "default")
+      if (!existsSync(resolve(worldPath, "players")))
+        // Check if the world directory contains a players directory.
+        // Create the players directory if it does not exist.
+        mkdirSync(resolve(worldPath, "players"));
 
     // Iterate through all the dimensions in the world directory.
     for (const [identifier] of world.dimensions) {
-      const dimensionPath = resolve(path, "dimensions", identifier);
+      const dimensionPath = resolve(worldPath, "dimensions", identifier);
 
       // Check if the dimension directory exists.
       if (!existsSync(dimensionPath))
@@ -789,13 +730,14 @@ class FileSystemProvider extends WorldProvider {
     // Create a new WorldInitializedSignal instance.
     new WorldInitializeSignal(world).emit();
 
-    // Create the properties file for the world.
+    // Write the properties to the world.
     writeFileSync(
-      resolve(path, "properties.json"),
+      resolve(worldPath, "properties.json"),
       JSON.stringify(world.properties, null, 2)
     );
 
-    // Return the created world.
+    // Register the world with the serenity instance.
+    serenity.registerWorld(world);
     return world;
   }
 }
