@@ -402,27 +402,28 @@ class FileSystemProvider extends WorldProvider {
 
     // Check if there are no blocks to write.
     if (blocks.length === 0 && !existsSync(blocksPath)) return;
-    else if (existsSync(blocksPath)) {
+    else if (existsSync(blocksPath) && blocks.length === 0) {
       // Delete the blocks file if it exists and there are no blocks.
       rmSync(blocksPath, { force: true });
+    } else {
+      // Create a new list tag for the blocks.
+      const list = new ListTag<CompoundTag>(blocks);
+
+      // Create a new binary stream to write the blocks.
+      const stream = new BinaryStream();
+
+      // Create a new compound tag to hold the blocks.
+      const root = new CompoundTag();
+
+      // Add the blocks list to the root compound tag.
+      root.set("blocks", list);
+
+      // Write the root compound tag to the stream.
+      CompoundTag.write(stream, root);
+
+      // Write the blocks to the file.
+      writeFileSync(blocksPath, stream.getBuffer());
     }
-    // Create a new list tag for the blocks.
-    const list = new ListTag<CompoundTag>(blocks);
-
-    // Create a new binary stream to write the blocks.
-    const stream = new BinaryStream();
-
-    // Create a new compound tag to hold the blocks.
-    const root = new CompoundTag();
-
-    // Add the blocks list to the root compound tag.
-    root.set("blocks", list);
-
-    // Write the root compound tag to the stream.
-    CompoundTag.write(stream, root);
-
-    // Write the blocks to the file.
-    writeFileSync(blocksPath, stream.getBuffer());
   }
 
   public static async initialize(
