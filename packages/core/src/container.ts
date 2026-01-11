@@ -115,9 +115,6 @@ class Container {
    * @returns The item in the slot.
    */
   public getItem(slot: number): ItemStack | null {
-    // Modulo the slot to avoid out of bounds errors.
-    slot = slot % this.getSize();
-
     // Return the item in the slot
     return this.storage[slot] ?? null;
   }
@@ -128,9 +125,6 @@ class Container {
    * @param item The item to set.
    */
   public setItem(slot: number, item: ItemStack): void {
-    // Modulo the slot to avoid out of bounds errors.
-    slot = slot % this.getSize();
-
     // Set the item in the slot
     this.storage[slot] = item;
 

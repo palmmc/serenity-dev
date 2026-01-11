@@ -20,6 +20,7 @@ const DefaultWorldProperties: WorldProperties = {
   ],
   gamerules: {
     showCoordinates: false,
+    showTags: false,
     showDaysPlayed: false,
     doDayLightCycle: true,
     doImmediateRespawn: false,

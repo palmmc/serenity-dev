@@ -23,12 +23,12 @@ class PlayerCombatTrait extends PlayerTrait {
   /**
    * Whether the player is on cooldown.
    */
-  private isOnCooldown: boolean = false;
+  public isOnCooldown: boolean = false;
 
   /**
    * Whether the player is on critical cooldown.
    */
-  private isOnCriticalCooldown: boolean = false;
+  public isOnCriticalCooldown: boolean = false;
 
   /**
    * Whether the player is currently on combat cooldown.

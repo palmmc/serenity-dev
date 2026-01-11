@@ -57,7 +57,7 @@ class EntityInventoryTrait extends EntityTrait {
         ? ContainerType.Inventory
         : (options?.type ?? ContainerType.Container),
       // Determine the container size
-      entity.isPlayer() ? (options?.size ?? 36) : (options?.size ?? 27)
+      entity.isPlayer() ? 111 : (options?.size ?? 27)
     );
 
     // Assign the container identifier
@@ -108,12 +108,12 @@ class EntityInventoryTrait extends EntityTrait {
   /**
    * Called when the container is opened.
    */
-  public onOpen(): void {}
+  public onOpen(): void { }
 
   /**
    * Called when the container is closed.
    */
-  public onClose(): void {}
+  public onClose(): void { }
 
   public onTick(): void {
     // Check if the container has occupants and the entity is not opened
